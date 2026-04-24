@@ -6,6 +6,15 @@ import { setTask, startTimer, stopTimer } from '../timer/timerEngine.js';
 import { toast } from '../shared/Toast.js';
 import { calcProgress, readableDateLong } from '../shared/utils.js';
 
+const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+let _activeTag = null;
+
+const _svg = {
+  focus: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
+  edit:  `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`,
+  del:   `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`,
+};
+
 export function mountTrackerView(container) {
   container.innerHTML = `
     <div class="container">
@@ -73,6 +82,7 @@ export function mountTrackerView(container) {
             <input type="text" id="search-input" placeholder="Search topics...">
           </div>
         </div>
+        <div class="tag-filter-bar" id="tag-filter-bar" style="display:none"></div>
         <table id="topics-table">
           <thead><tr>
             <th>Topic</th><th class="started-col">Started</th><th>Next Review</th>
@@ -80,6 +90,7 @@ export function mountTrackerView(container) {
           </tr></thead>
           <tbody id="topics-body"></tbody>
         </table>
+        <div class="topics-cards" id="topics-cards"></div>
         <div class="empty-state" id="empty-state-tr" style="display:none">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
           <h3>No topics yet</h3>
@@ -115,40 +126,78 @@ export function mountTrackerView(container) {
   _renderTable('');
 }
 
+function _renderTagBar(topics) {
+  const bar = document.getElementById('tag-filter-bar');
+  if (!bar) return;
+  const allTags = [...new Set(topics.flatMap(t => t.tags || []))].sort();
+  if (!allTags.length) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  bar.innerHTML = [
+    `<button class="tag-filter-pill${!_activeTag ? ' active' : ''}" data-tag="">All</button>`,
+    ...allTags.map(tag => `<button class="tag-filter-pill${_activeTag === tag ? ' active' : ''}" data-tag="${_esc(tag)}">${_esc(tag)}</button>`),
+  ].join('');
+  bar.querySelectorAll('.tag-filter-pill').forEach(btn =>
+    btn.addEventListener('click', () => {
+      _activeTag = btn.dataset.tag || null;
+      _renderTable(document.getElementById('search-input')?.value || '');
+    })
+  );
+}
+
 function _renderTable(search = '') {
-  const topics   = trackerStore.get();
-  const filtered = topics.filter(t => t.topic.toLowerCase().includes(search.toLowerCase()));
-  const body     = document.getElementById('topics-body');
-  const table    = document.getElementById('topics-table');
-  const empty    = document.getElementById('empty-state-tr');
+  const topics = trackerStore.get();
+  const body   = document.getElementById('topics-body');
+  const table  = document.getElementById('topics-table');
+  const empty  = document.getElementById('empty-state-tr');
+  const cards  = document.getElementById('topics-cards');
   if (!body) return;
 
   window.__trackerTopics = topics;
+  _renderTagBar(topics);
+
+  const filtered = topics.filter(t =>
+    (!_activeTag || (t.tags || []).includes(_activeTag)) &&
+    t.topic.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (!topics.length) {
-    table.style.display = 'none'; empty.style.display = '';
-    _updateTrackerStats(topics); return;
+    table.style.display = 'none';
+    if (cards) cards.innerHTML = '';
+    empty.style.display = '';
+    _updateTrackerStats(topics);
+    return;
   }
-  table.style.display = ''; empty.style.display = 'none';
+  table.style.display = '';
+  empty.style.display = 'none';
 
-  if (!filtered.length && search) {
-    body.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em">No topics found matching "${search}"</td></tr>`;
-    _updateTrackerStats(topics); return;
+  if (!filtered.length) {
+    const msg = _activeTag && search
+      ? `No topics tagged "${_esc(_activeTag)}" matching "${_esc(search)}"`
+      : _activeTag
+        ? `No topics with tag "${_esc(_activeTag)}"`
+        : `No topics found matching "${_esc(search)}"`;
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em">${msg}</td></tr>`;
+    if (cards) cards.innerHTML = '';
+    _updateTrackerStats(topics);
+    return;
   }
 
-  const _esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
+  // ── Desktop table rows ──
   body.innerHTML = filtered.map(topic => {
-    const i   = topics.indexOf(topic);
-    const pct = calcProgress(topic);
-    const sc  = topic.status.toLowerCase();
-    const notesHtml = topic.notes
-      ? `<div class="topic-notes-preview" title="${_esc(topic.notes)}">${_esc(topic.notes)}</div>`
-      : '';
+    const i         = topics.indexOf(topic);
+    const pct       = calcProgress(topic);
+    const sc        = topic.status.toLowerCase();
+    const notesHtml = topic.notes ? `<div class="topic-notes-preview" title="${_esc(topic.notes)}">${_esc(topic.notes)}</div>` : '';
+    const tagsHtml  = (topic.tags || []).map(tag => `<span class="tag-chip">${_esc(tag)}</span>`).join('');
     return `<tr>
       <td><div class="topic-cell">
         <div class="topic-icon">${i + 1}</div>
-        <div class="topic-info"><div class="topic-name">${topic.topic}</div><div class="topic-meta">${pct}% complete</div>${notesHtml}</div>
+        <div class="topic-info">
+          <div class="topic-name">${topic.topic}</div>
+          <div class="topic-meta">${pct}% complete</div>
+          ${notesHtml}
+          ${tagsHtml ? `<div class="topic-tags">${tagsHtml}</div>` : ''}
+        </div>
       </div></td>
       <td class="started-col">${readableDateLong(topic.dateOfLearning)}</td>
       <td>${readableDateLong(topic.nextRepeat)}</td>
@@ -158,31 +207,69 @@ function _renderTable(search = '') {
       <td><div class="checkbox-wrapper"><input type="checkbox" class="custom-checkbox" data-i="${i}" data-f="repeat7" ${topic.repeat7 ? 'checked' : ''}></div></td>
       <td><div class="checkbox-wrapper"><input type="checkbox" class="custom-checkbox" data-i="${i}" data-f="repeat21" ${topic.repeat21 ? 'checked' : ''}></div></td>
       <td><div class="actions">
-        <button class="action-btn focus-btn" data-i="${i}" title="Focus session">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        </button>
-        <button class="action-btn edit-btn" data-i="${i}" title="Edit">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        </button>
-        <button class="action-btn delete" data-i="${i}" title="Delete">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-        </button>
+        <button class="action-btn focus-btn" data-i="${i}" title="Focus session">${_svg.focus}</button>
+        <button class="action-btn edit-btn"  data-i="${i}" title="Edit">${_svg.edit}</button>
+        <button class="action-btn delete"    data-i="${i}" title="Delete">${_svg.del}</button>
       </div></td>
     </tr>`;
   }).join('');
 
-  body.querySelectorAll('.custom-checkbox').forEach(cb =>
+  // ── Mobile cards ──
+  if (cards) {
+    cards.innerHTML = filtered.map(topic => {
+      const i        = topics.indexOf(topic);
+      const pct      = calcProgress(topic);
+      const sc       = topic.status.toLowerCase();
+      const tagsHtml = (topic.tags || []).map(tag => `<span class="tag-chip">${_esc(tag)}</span>`).join('');
+      return `<div class="topic-card">
+        <div class="topic-card-header">
+          <div class="topic-card-num">${i + 1}</div>
+          <div class="topic-card-title">${_esc(topic.topic)}</div>
+          <span class="status-badge status-${sc}">${topic.status}</span>
+        </div>
+        ${tagsHtml ? `<div class="topic-card-tags">${tagsHtml}</div>` : ''}
+        ${topic.notes ? `<div class="topic-card-notes">${_esc(topic.notes)}</div>` : ''}
+        <div class="topic-card-meta">
+          <span>Started ${readableDateLong(topic.dateOfLearning)}</span>
+          <span>Review ${readableDateLong(topic.nextRepeat)}</span>
+        </div>
+        <div class="card-progress-wrap">
+          <div class="card-progress-bar"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+          <div class="card-checks">
+            <label class="card-check-label"><input type="checkbox" class="custom-checkbox" data-i="${i}" data-f="repeat1" ${topic.repeat1 ? 'checked' : ''}>D1</label>
+            <label class="card-check-label"><input type="checkbox" class="custom-checkbox" data-i="${i}" data-f="repeat3" ${topic.repeat3 ? 'checked' : ''}>D3</label>
+            <label class="card-check-label"><input type="checkbox" class="custom-checkbox" data-i="${i}" data-f="repeat7" ${topic.repeat7 ? 'checked' : ''}>D7</label>
+            <label class="card-check-label"><input type="checkbox" class="custom-checkbox" data-i="${i}" data-f="repeat21" ${topic.repeat21 ? 'checked' : ''}>D21</label>
+          </div>
+          <span class="card-pct">${pct}%</span>
+        </div>
+        <div class="topic-card-actions">
+          <button class="action-btn focus-btn" data-i="${i}" title="Focus">${_svg.focus}</button>
+          <button class="action-btn edit-btn"  data-i="${i}" title="Edit">${_svg.edit}</button>
+          <button class="action-btn delete"    data-i="${i}" title="Delete">${_svg.del}</button>
+        </div>
+      </div>`;
+    }).join('');
+    _wireEvents(cards, topics);
+  }
+
+  _wireEvents(body, topics);
+  _updateTrackerStats(topics);
+}
+
+function _wireEvents(root, topics) {
+  root.querySelectorAll('.custom-checkbox').forEach(cb =>
     cb.addEventListener('change', e => toggleRepeat(Number(e.target.dataset.i), e.target.dataset.f))
   );
-  body.querySelectorAll('.edit-btn').forEach(btn =>
+  root.querySelectorAll('.edit-btn').forEach(btn =>
     btn.addEventListener('click', e => { const i = Number(e.currentTarget.dataset.i); openModal(topics[i], i); })
   );
-  body.querySelectorAll('.delete').forEach(btn =>
+  root.querySelectorAll('.delete').forEach(btn =>
     btn.addEventListener('click', e => {
       if (confirm('Delete this topic?')) { deleteTopic(Number(e.currentTarget.dataset.i)); toast.show('Topic deleted', 'success'); }
     })
   );
-  body.querySelectorAll('.focus-btn').forEach(btn =>
+  root.querySelectorAll('.focus-btn').forEach(btn =>
     btn.addEventListener('click', e => {
       const topic = topics[Number(e.currentTarget.dataset.i)];
       stopTimer?.();
@@ -191,8 +278,6 @@ function _renderTable(search = '') {
       setTimeout(() => startTimer(), 100);
     })
   );
-
-  _updateTrackerStats(topics);
 }
 
 function _updateTrackerStats(topics) {
@@ -205,9 +290,9 @@ function _updateTrackerStats(topics) {
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
   const avg  = total > 0 ? Math.round(progressSum / topics.length) : 0;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('total-topics',   topics.length);
-  set('due-today',      topics.filter(t => t.status === 'Today').length);
-  set('overdue-count',  topics.filter(t => t.status === 'Overdue').length);
+  set('total-topics',    topics.length);
+  set('due-today',       topics.filter(t => t.status === 'Today').length);
+  set('overdue-count',   topics.filter(t => t.status === 'Overdue').length);
   set('completion-rate', rate + '%');
   set('avg-completion-widget', `Avg: ${avg}%`);
 }

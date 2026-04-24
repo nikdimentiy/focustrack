@@ -5,7 +5,8 @@ import './design/components.css';
 import { timerStore } from './store/timerStore.js';
 import { trackerStore } from './store/trackerStore.js';
 import { loadTimerState, loadSessions, loadTopics } from './services/storage.js';
-import { restoreTimer } from './timer/timerEngine.js';
+import { restoreTimer, startTimer, stopTimer } from './timer/timerEngine.js';
+import { openModal } from './tracker/TopicModal.js';
 import { calcStatus } from './shared/utils.js';
 
 import { AuthWidget } from './auth/AuthWidget.js';
@@ -29,9 +30,41 @@ function boot() {
   // Mount UI
   toast.mount(document.getElementById('toast-container'));
   AuthWidget.mount(document.getElementById('auth-widget'));
+
+  let _currentView = 'dw';
+  Nav.onSwitch(v => { _currentView = v; });
   Nav.mount(document.getElementById('nav'));
+
   mountTimerView(document.getElementById('dw-view'));
   mountTrackerView(document.getElementById('tr-view'));
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    const tag = (document.activeElement?.tagName || '').toLowerCase();
+    const inInput = tag === 'input' || tag === 'textarea' || tag === 'select';
+    const modalOpen = document.getElementById('topic-modal')?.classList.contains('active') ||
+                      document.getElementById('session-edit-modal')?.classList.contains('active');
+
+    if (e.key === 'Escape') {
+      document.getElementById('topic-modal')?.classList.remove('active');
+      document.getElementById('session-edit-modal')?.classList.remove('active');
+      return;
+    }
+    if (inInput || modalOpen) return;
+
+    if (e.key === '1') { e.preventDefault(); Nav.switchTo('dw'); return; }
+    if (e.key === '2') { e.preventDefault(); Nav.switchTo('tr'); return; }
+
+    if (e.key === ' ' && _currentView === 'dw') {
+      e.preventDefault();
+      timerStore.get().running ? stopTimer() : startTimer();
+      return;
+    }
+    if ((e.key === 'n' || e.key === 'N') && _currentView === 'tr') {
+      openModal();
+      return;
+    }
+  });
 
   // Init auth — triggers doSync() on login
   initAuth(doSync);

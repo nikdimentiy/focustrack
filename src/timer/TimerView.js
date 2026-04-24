@@ -4,6 +4,8 @@ import { onSyncStatus } from '../services/syncEngine.js';
 import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart } from '../shared/utils.js';
 import { toast } from '../shared/Toast.js';
 
+const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const WEEKLY_TARGET = 300;
 
 export function mountTimerView(container) {
@@ -21,9 +23,10 @@ export function mountTimerView(container) {
               <div class="task-name" id="taskDisplay">Untitled <em>Flow</em></div>
             </div>
             <div class="setup-row">
-              <div class="field">
+              <div class="field task-field">
                 <label for="taskInput">Mission label</label>
-                <input id="taskInput" type="text" placeholder="What are you working on?" />
+                <input id="taskInput" type="text" placeholder="What are you working on?" autocomplete="off" />
+                <div id="recentTasksDrop" class="recent-tasks-drop"></div>
               </div>
               <div class="field">
                 <label for="intensitySelect">Intensity</label>
@@ -139,6 +142,31 @@ export function mountTimerView(container) {
   resetBtn.addEventListener('click', resetTimer);
   taskInput.addEventListener('input', e => { setTask(e.target.value); _updateTaskDisplay(taskDisp, e.target.value); });
   intensity.addEventListener('change', e => setIntensity(e.target.value));
+
+  const taskDrop = container.querySelector('#recentTasksDrop');
+  taskInput.addEventListener('focus', () => {
+    const sessions = timerStore.get().sessions;
+    const seen = new Set();
+    const recent = sessions
+      .slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .map(s => s.task)
+      .filter(t => t && !seen.has(t) && seen.add(t))
+      .slice(0, 8);
+    if (!recent.length) return;
+    taskDrop.innerHTML = recent.map(t => `<button class="recent-task-item" type="button">${_esc(t)}</button>`).join('');
+    taskDrop.classList.add('open');
+    taskDrop.querySelectorAll('.recent-task-item').forEach(btn => {
+      btn.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const val = btn.textContent;
+        taskInput.value = val;
+        setTask(val);
+        _updateTaskDisplay(taskDisp, val);
+        taskDrop.classList.remove('open');
+      });
+    });
+  });
+  taskInput.addEventListener('blur', () => setTimeout(() => taskDrop.classList.remove('open'), 150));
 
   container.querySelectorAll('.range-toggle button').forEach(btn =>
     btn.addEventListener('click', () => {

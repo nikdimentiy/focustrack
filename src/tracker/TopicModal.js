@@ -15,6 +15,7 @@ export function openModal(topic = null, index = -1) {
     document.getElementById('date-learned').value = topic.dateOfLearning;
     document.getElementById('next-repeat').value  = topic.nextRepeat;
     document.getElementById('status').value       = topic.status;
+    document.getElementById('topic-tags').value   = (topic.tags || []).join(', ');
     document.getElementById('topic-notes').value  = topic.notes || '';
   } else {
     title.textContent = 'Add New Topic';
@@ -24,6 +25,7 @@ export function openModal(topic = null, index = -1) {
     const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
     document.getElementById('date-learned').value = fmtDateInput(today);
     document.getElementById('next-repeat').value  = fmtDateInput(tomorrow);
+    document.getElementById('topic-tags').value   = '';
     document.getElementById('topic-notes').value  = '';
   }
   modal.classList.add('active');
@@ -45,11 +47,13 @@ export function mountModal(onSave) {
 
   form.addEventListener('submit', e => {
     e.preventDefault();
+    const rawTags = document.getElementById('topic-tags').value;
     const data = {
       topic:          document.getElementById('topic').value.trim(),
       dateOfLearning: document.getElementById('date-learned').value,
       nextRepeat:     document.getElementById('next-repeat').value,
       status:         document.getElementById('status').value,
+      tags:           rawTags.split(',').map(t => t.trim()).filter(Boolean),
       notes:          document.getElementById('topic-notes').value.trim(),
     };
     const idx = Number(document.getElementById('row-index').value);
