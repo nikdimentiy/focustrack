@@ -1,0 +1,17 @@
+:root {
+  --neon-cyan:   #00f5ff;
+  --neon-pink:   #ff2d78;
+  --neon-gold:   #ffd700;
+  --neon-green:  #39ff14;
+  --neon-purple: #bf5fff;
+  --bg-deep:     #050810;
+  --bg-panel:    rgba(5,15,30,0.85);
+  --bg-glass:    rgba(0,245,255,0.04);
+  --border-dim:  rgba(0,245,255,0.15);
+  --border-med:  rgba(0,245,255,0.28);
+  --text-main:   #c8e6f0;
+  --text-dim:    rgba(200,230,240,0.5);
+  --font-mono:   'Share Tech Mono', monospace;
+  --font-hud:    'Rajdhani', sans-serif;
+  --font-title:  'Orbitron', sans-serif;
+}

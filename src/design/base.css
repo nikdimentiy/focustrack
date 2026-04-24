@@ -1,0 +1,40 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  font-family: var(--font-hud); background: var(--bg-deep); color: var(--text-main);
+  padding-top: max(60px, calc(44px + env(safe-area-inset-top, 0px)));
+  -webkit-tap-highlight-color: transparent;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px; pointer-events: none; z-index: -1;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,245,255,0.07) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 40% at 80% 100%, rgba(255,45,120,0.06) 0%, transparent 60%);
+  pointer-events: none; z-index: -1;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,245,255,0.4); }
+
+@keyframes pulse-dw  { 0%,100% { transform: scale(.8); opacity: .6; } 60% { transform: scale(1.2); opacity: 1; } }
+@keyframes logo-pulse{ 0%,100% { box-shadow: 0 0 20px rgba(0,245,255,0.15); } 50% { box-shadow: 0 0 35px rgba(0,245,255,0.35); } }
+@keyframes checkPop  { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; } }
+
+/* Prevent iOS input zoom — font-size must be ≥16px on focused inputs */
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* View toggling via body class */
+#dw-view, #tr-view { display: none; }
+body.theme-dw #dw-view { display: block; }
+body.theme-tr #tr-view { display: block; }
