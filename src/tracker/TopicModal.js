@@ -1,12 +1,10 @@
 import { addTopic, updateTopic } from './trackerEngine.js';
 import { fmtDateInput } from '../shared/utils.js';
 
-let _onClose = null;
-
 export function openModal(topic = null, index = -1) {
-  const modal = document.getElementById('topic-modal');
-  const title = document.getElementById('modal-title');
-  const form  = document.getElementById('topic-form');
+  const modal  = document.getElementById('topic-modal');
+  const title  = document.getElementById('modal-title');
+  const form   = document.getElementById('topic-form');
   const rowIdx = document.getElementById('row-index');
 
   form.reset();
@@ -17,6 +15,7 @@ export function openModal(topic = null, index = -1) {
     document.getElementById('date-learned').value = topic.dateOfLearning;
     document.getElementById('next-repeat').value  = topic.nextRepeat;
     document.getElementById('status').value       = topic.status;
+    document.getElementById('topic-notes').value  = topic.notes || '';
   } else {
     title.textContent = 'Add New Topic';
     rowIdx.value = -1;
@@ -25,6 +24,7 @@ export function openModal(topic = null, index = -1) {
     const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
     document.getElementById('date-learned').value = fmtDateInput(today);
     document.getElementById('next-repeat').value  = fmtDateInput(tomorrow);
+    document.getElementById('topic-notes').value  = '';
   }
   modal.classList.add('active');
 }
@@ -46,10 +46,11 @@ export function mountModal(onSave) {
   form.addEventListener('submit', e => {
     e.preventDefault();
     const data = {
-      topic:          document.getElementById('topic').value,
+      topic:          document.getElementById('topic').value.trim(),
       dateOfLearning: document.getElementById('date-learned').value,
       nextRepeat:     document.getElementById('next-repeat').value,
       status:         document.getElementById('status').value,
+      notes:          document.getElementById('topic-notes').value.trim(),
     };
     const idx = Number(document.getElementById('row-index').value);
     if (idx >= 0) {

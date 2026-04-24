@@ -136,14 +136,19 @@ function _renderTable(search = '') {
     _updateTrackerStats(topics); return;
   }
 
+  const _esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
   body.innerHTML = filtered.map(topic => {
     const i   = topics.indexOf(topic);
     const pct = calcProgress(topic);
     const sc  = topic.status.toLowerCase();
+    const notesHtml = topic.notes
+      ? `<div class="topic-notes-preview" title="${_esc(topic.notes)}">${_esc(topic.notes)}</div>`
+      : '';
     return `<tr>
       <td><div class="topic-cell">
         <div class="topic-icon">${i + 1}</div>
-        <div class="topic-info"><div class="topic-name">${topic.topic}</div><div class="topic-meta">${pct}% complete</div></div>
+        <div class="topic-info"><div class="topic-name">${topic.topic}</div><div class="topic-meta">${pct}% complete</div>${notesHtml}</div>
       </div></td>
       <td class="started-col">${readableDateLong(topic.dateOfLearning)}</td>
       <td>${readableDateLong(topic.nextRepeat)}</td>

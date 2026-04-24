@@ -312,3 +312,20 @@ select.form-control option { background: #050810; color: var(--text-main); }
 .modal-buttons .btn-secondary:hover { background: rgba(255,45,120,0.13); }
 .modal-buttons .btn-primary   { background: rgba(0,245,255,0.08); border-color: rgba(0,245,255,0.3); color: var(--neon-cyan); }
 .modal-buttons .btn-primary:hover { background: rgba(0,245,255,0.15); box-shadow: 0 0 16px rgba(0,245,255,0.2); }
+
+/* ── Session Edit Modal ── */
+#session-edit-modal { display: none; position: fixed; z-index: 20000; inset: 0; background: rgba(5,8,16,0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; opacity: 0; transition: opacity .3s ease; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
+#session-edit-modal.active { display: flex; opacity: 1; }
+#session-edit-modal.active .modal-content { transform: scale(1) translateY(0); }
+
+/* ── Session list edit button ── */
+#dw-view .session-row-end { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+#dw-view .session-edit-btn { padding: 3px 5px; background: none; border: 1px solid rgba(0,245,255,0.12); border-radius: 4px; cursor: pointer; color: var(--text-dim); display: flex; align-items: center; transition: all .15s; }
+#dw-view .session-edit-btn:hover { border-color: rgba(0,245,255,0.35); color: var(--neon-cyan); background: rgba(0,245,255,0.05); }
+#dw-view .session-edit-btn svg { width: 11px; height: 11px; }
+
+/* ── Textarea in modals ── */
+textarea.form-control { resize: vertical; min-height: 72px; line-height: 1.5; padding-top: 8px; padding-bottom: 8px; }
+
+/* ── Topic notes preview in tracker table ── */
+#tr-view .topic-notes-preview { font-family: var(--font-mono); font-size: .53rem; color: rgba(0,245,255,0.42); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; cursor: default; }

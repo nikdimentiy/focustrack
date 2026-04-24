@@ -65,6 +65,14 @@ export function resetTimer() {
 export function setTask(task)          { timerStore.set({ task });       persist(); }
 export function setIntensity(intensity){ timerStore.set({ intensity });  persist(); }
 
+export function updateSession(timestamp, patch) {
+  const sessions = timerStore.get().sessions.map(s =>
+    s.timestamp === timestamp ? { ...s, ...patch } : s
+  );
+  timerStore.set({ sessions });
+  saveSessions(sessions);
+}
+
 export function applyCloudState(cloudState) {
   const cloudTime = new Date(cloudState.session_started_at).getTime();
   if (_interval) { clearInterval(_interval); _interval = null; }

@@ -1,7 +1,8 @@
 import { timerStore } from '../store/timerStore.js';
-import { startTimer, stopTimer, resetTimer, setTask, setIntensity, SESSION_TARGET, ARC_FULL } from './timerEngine.js';
+import { startTimer, stopTimer, resetTimer, setTask, setIntensity, updateSession, SESSION_TARGET, ARC_FULL } from './timerEngine.js';
 import { onSyncStatus } from '../services/syncEngine.js';
 import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart } from '../shared/utils.js';
+import { toast } from '../shared/Toast.js';
 
 const WEEKLY_TARGET = 300;
 
@@ -161,6 +162,7 @@ export function mountTimerView(container) {
   });
 
   onSyncStatus(status => _updateChip(container, status));
+  mountSessionEditModal();
 
   const s = timerStore.get();
   taskInput.value = s.task;
@@ -240,9 +242,60 @@ function _renderSessions(sessions) {
   if (empty) empty.style.display = 'none';
   list.innerHTML = sessions.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(s => `
     <li class="session-item">
-      <div class="session-row"><span class="session-task">${s.task}</span><span class="session-dur">${s.minutes} min</span></div>
+      <div class="session-row">
+        <span class="session-task">${s.task}</span>
+        <div class="session-row-end">
+          <span class="session-dur">${s.minutes} min</span>
+          <button class="session-edit-btn" data-ts="${s.timestamp}" title="Edit session">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+        </div>
+      </div>
       <div class="session-meta">${s.intensity} · ${readableDate(s.date)} · ${new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
     </li>`).join('');
+
+  list.querySelectorAll('.session-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const session = sessions.find(x => x.timestamp === btn.dataset.ts);
+      if (session) _openSessionEditModal(session);
+    });
+  });
+}
+
+function _openSessionEditModal(session) {
+  const modal = document.getElementById('session-edit-modal');
+  if (!modal) return;
+  document.getElementById('session-ts').value             = session.timestamp;
+  document.getElementById('session-edit-task').value      = session.task;
+  document.getElementById('session-edit-minutes').value   = session.minutes;
+  document.getElementById('session-edit-intensity').value = session.intensity;
+  modal.classList.add('active');
+}
+
+function mountSessionEditModal() {
+  const modal     = document.getElementById('session-edit-modal');
+  const form      = document.getElementById('session-edit-form');
+  const cancelBtn = document.getElementById('session-cancel-btn');
+  if (!modal || !form || !cancelBtn) return;
+
+  const close = () => {
+    modal.classList.remove('active');
+    setTimeout(() => form.reset(), 300);
+  };
+
+  cancelBtn.addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const ts        = document.getElementById('session-ts').value;
+    const task      = document.getElementById('session-edit-task').value.trim() || 'Untitled Flow';
+    const minutes   = Math.max(1, parseInt(document.getElementById('session-edit-minutes').value, 10));
+    const intensity = document.getElementById('session-edit-intensity').value;
+    updateSession(ts, { task, minutes, intensity });
+    toast.show('Session updated', 'success');
+    close();
+  });
 }
 
 function _updateChip(container, status) {
