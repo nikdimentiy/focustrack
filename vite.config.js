@@ -2,6 +2,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: '.',
-  base: '/focustrack/',
+  base: '/',
   build: { outDir: 'dist' },
 });
