@@ -56,10 +56,10 @@ export function mountFooterWidget(container) {
 
 export function mountInfoButton(container) {
   container.innerHTML = `
-    <button class="info-btn" id="info-open" title="Shortcuts & developer info">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    <button class="info-btn" id="info-open" title="Keyboard shortcuts">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="6" width="20" height="12" rx="2"/>
+        <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8M6 14h.01M18 14h.01"/>
       </svg>
     </button>`;
 
@@ -75,7 +75,20 @@ export function mountInfoButton(container) {
         </svg>
       </button>
 
-      <div class="info-head-lbl">// keyboard shortcuts</div>
+      <div class="info-header">
+        <div class="info-header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8M6 14h.01M18 14h.01"/>
+          </svg>
+        </div>
+        <div class="info-header-text">
+          <div class="info-title">Shortcuts</div>
+          <div class="info-subtitle">Keyboard controls</div>
+        </div>
+      </div>
+
+      <div class="info-section-lbl">Navigation</div>
       <div class="info-shortcuts">
         <div class="info-row">
           <span class="info-key">1</span>
@@ -89,9 +102,16 @@ export function mountInfoButton(container) {
           <span class="info-key">3</span>
           <span class="info-desc">Analytics</span>
         </div>
+      </div>
+
+      <div class="info-section-lbl">Controls</div>
+      <div class="info-shortcuts">
         <div class="info-row">
           <span class="info-key">Space</span>
-          <span class="info-desc">Start / Stop timer <span class="info-sub">— Timer view</span></span>
+          <div class="info-desc-wrap">
+            <span class="info-desc">Start / Stop timer</span>
+            <span class="info-sub">Timer view only</span>
+          </div>
         </div>
         <div class="info-row">
           <span class="info-key">Esc</span>
@@ -101,7 +121,6 @@ export function mountInfoButton(container) {
 
       <div class="info-divider"></div>
 
-      <div class="info-head-lbl">// developer</div>
       <div class="info-dev">
         <div class="info-dev-name">Nikey Studio</div>
         <a class="info-dev-email" href="mailto:nikey.dim@zohomail.com">nikey.dim@zohomail.com</a>
