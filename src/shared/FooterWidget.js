@@ -52,6 +52,30 @@ export function mountFooterWidget(container) {
 
   _tick();
   setInterval(_tick, 1000);
+
+  // Intelligent hide: dim after 3s of no mouse movement, restore on proximity
+  const fw = container.querySelector('.fw');
+  let _idleTimer = null;
+
+  const _dim  = () => fw.classList.add('fw-idle');
+  const _wake = () => { fw.classList.remove('fw-idle'); };
+
+  const _resetIdle = () => {
+    _wake();
+    clearTimeout(_idleTimer);
+    _idleTimer = setTimeout(_dim, 3000);
+  };
+
+  // Start the first idle countdown
+  _idleTimer = setTimeout(_dim, 3000);
+
+  // Any mouse movement on the page resets the timer
+  document.addEventListener('mousemove', _resetIdle, { passive: true });
+
+  // Hovering the widget itself always wakes it (CSS handles instant snap,
+  // but also reset the timer so it doesn't re-dim while cursor is on it)
+  fw.addEventListener('mouseenter', () => { _wake(); clearTimeout(_idleTimer); });
+  fw.addEventListener('mouseleave', _resetIdle);
 }
 
 export function mountInfoButton(container) {

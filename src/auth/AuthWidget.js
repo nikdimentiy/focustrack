@@ -35,9 +35,10 @@ export const AuthWidget = {
     this._el.innerHTML = `
       <div class="cloud-auth-widget caw-compact">
         <button class="caw-icon-btn" id="cawToggle" title="${authed ? `Signed in: ${email}` : 'Sign in to sync'}">
-          <svg class="caw-cloud-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+          <svg class="caw-cloud-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L4 6v6c0 5.1 3.5 9.8 8 11 4.5-1.2 8-5.9 8-11V6L12 2z"/>
+            <circle cx="12" cy="10" r="2.5"/>
+            <path d="M7.5 18a5 5 0 0 1 9 0"/>
           </svg>
           <span class="caw-status-dot ${authed ? 'caw-dot-online' : 'caw-dot-offline'}"></span>
         </button>
