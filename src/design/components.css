@@ -413,28 +413,105 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 @media (max-width: 520px) {
   #dw-view .app { padding: 14px 12px 40px; }
 }
-@media (max-width: 599px) {
-  /* Extra bottom padding so content clears the fixed bottom auth widget */
-  #dw-view .app { padding-bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
-  /* Fields — full width on phones */
-  #dw-view .setup-row          { grid-template-columns: 1fr; }
-  #dw-view .field input,
-  #dw-view .field select       { height: 44px; font-size: 1rem; }
-  /* Buttons — full width, tappable */
-  #dw-view .btn-col            { max-width: none; gap: 9px; }
-  #dw-view .btn                { min-height: 50px; font-size: .88rem; border-radius: 8px; }
-  #dw-view .btn-start          { min-height: 56px; font-size: .95rem; }
+@media (max-width: 860px) {
+  /* ─────────────────────────────────────────────────────────────────────────
+     Mobile/Tablet redesign — Current Session
+     Applies to phones (≤599px) and iPad portrait (≤860px).
+     Reorder + restyle the panel so it reads top-down as a story:
+       1. Active Mission (who you are right now)
+       2. Big timer arc (where you are right now)
+       3. Big Start button (the only thing you're going to tap)
+       4. Mode tabs (how long)
+       5. Mode config (pomo / custom details)
+       6. Form (mission label, intensity, tags)
+       7. Stats (today's progress)
+     ─────────────────────────────────────────────────────────────────────── */
+
+  /* Panel — softer card on mobile (corner brackets stay) */
+  #dw-view .panel       { padding: 22px 16px 24px; border-radius: 14px; }
+  #dw-view .panel-title { font-size: 1.25rem; letter-spacing: .04em; margin-bottom: 16px; }
+
+  /* Flatten session-body so we can reorder children of session-left + session-right
+     in a single column flex */
+  #dw-view .session-body  { display: flex; flex-direction: column; gap: 16px; }
+  #dw-view .session-left,
+  #dw-view .session-right { display: contents; }
+
+  /* Layout order */
+  #dw-view .task-block              { order: 1; }
+  #dw-view .arc-wrap                { order: 2; }
+  #dw-view .btn-col                 { order: 3; }
+  #dw-view .mode-row                { order: 4; }
+  #dw-view .pomo-config-row         { order: 5; }
+  #dw-view .custom-minutes-row      { order: 6; }
+  #dw-view .setup-row:not(.tag-row) { order: 7; }
+  #dw-view .setup-row.tag-row       { order: 8; }
+  #dw-view .stats-grid              { order: 9; }
+
+  /* 1 ── Active Mission — feels like a hero card */
+  #dw-view .task-block {
+    padding: 16px 18px 14px; border-radius: 12px;
+    background: rgba(0,245,255,0.04);
+    border: 1px solid rgba(0,245,255,0.12);
+    border-top: 1px solid rgba(0,245,255,0.34);
+  }
+  #dw-view .task-kicker { font-size: .55rem; letter-spacing: .25em; opacity: .6; margin-bottom: 5px; }
+  #dw-view .task-name   { font-size: 1.5rem; line-height: 1.2; }
+
+  /* 2 ── Arc — bigger, centered, the visual anchor */
+  #dw-view .arc-wrap     { padding: 6px 0 2px; align-self: center; }
+  #dw-view .arc-svg      { width: 220px; height: 220px; }
+  #dw-view .timer-pct    { font-size: .65rem; }
+  #dw-view .timer-digits { font-size: 36px; letter-spacing: .04em; }
+  #dw-view .timer-sub    { font-size: .6rem; }
+
+  /* 3 ── Buttons — full-width primary CTA */
+  #dw-view .btn-col   { max-width: none; gap: 10px; }
+  #dw-view .btn       { min-height: 50px; font-size: .88rem; border-radius: 10px; }
+  #dw-view .btn-start {
+    min-height: 60px; font-size: 1rem; letter-spacing: .14em;
+    background: rgba(57,255,20,0.1);
+    border-color: rgba(57,255,20,0.4);
+    box-shadow: 0 0 18px rgba(57,255,20,0.16);
+  }
   #dw-view .btn-stop,
-  #dw-view .btn-reset          { min-height: 50px; }
-  /* Custom duration — wider number input */
-  .custom-minutes-row          { flex-wrap: wrap; gap: 10px; width: 100%; }
+  #dw-view .btn-reset { min-height: 50px; }
+
+  /* Cloud chip + tick toggle — keep grouped under the buttons */
+  #dw-view .dw-cloud-chip { width: 100%; }
+
+  /* 4 ── Mode tabs — premium tap targets */
+  .mode-row { gap: 8px; width: 100%; padding: 0; margin: 0; }
+  .mode-btn { min-height: 60px; padding: 12px 4px 10px; border-radius: 12px; }
+  .mode-name { font-size: .65rem; letter-spacing: .08em; }
+  .mode-dur  { font-size: .56rem; opacity: .85; margin-top: 4px; }
+
+  /* 5 ── Custom duration row — full width */
+  .custom-minutes-row { flex-wrap: wrap; gap: 10px; width: 100%; }
   .custom-minutes-row input[type="number"] { width: 80px; height: 38px; font-size: .82rem; }
-  /* Stats mini-widgets — 2-column with more breathing room */
-  #dw-view .stats-grid         { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  #dw-view .stat               { padding: 12px 14px; }
-  #dw-view .stat-value         { font-size: clamp(20px, 5.5vw, 28px); }
-  /* Cloud sync chip full width */
-  #dw-view .dw-cloud-chip      { width: 100%; }
+
+  /* 6 ── Form fields — readable labels, comfy inputs */
+  #dw-view .setup-row          { grid-template-columns: 1fr; gap: 12px; }
+  #dw-view .field              { gap: 6px; }
+  #dw-view .field label        { font-size: .6rem; letter-spacing: .12em; }
+  #dw-view .field input,
+  #dw-view .field select       { height: 46px; font-size: 1rem; border-radius: 8px; }
+
+  /* 7 ── Stats — compact summary, separated from the controls above */
+  #dw-view .stats-grid {
+    grid-template-columns: repeat(2, 1fr); gap: 8px;
+    padding-top: 16px; margin-top: 4px;
+    border-top: 1px dashed rgba(0,245,255,0.12);
+  }
+  #dw-view .stat       { padding: 12px 14px; border-radius: 8px; }
+  #dw-view .stat-value { font-size: clamp(22px, 6vw, 30px); }
+  #dw-view .stat-label { font-size: .54rem; letter-spacing: .14em; }
+  #dw-view .stat-sub   { font-size: .53rem; }
+}
+
+/* Phone-only — extra bottom padding so content clears the floating bottom auth widget */
+@media (max-width: 599px) {
+  #dw-view .app { padding-bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── Repetition Tracker View ── */
@@ -982,10 +1059,6 @@ tr.dragging { opacity: .4; }
 }
 
 @media (max-width: 599px) {
-  .mode-row  { gap: 6px; width: 100%; }
-  .mode-btn  { min-height: 54px; padding: 10px 4px 8px; border-radius: 8px; }
-  .mode-name { font-size: .62rem; letter-spacing: .08em; }
-  .mode-dur  { font-size: .55rem; opacity: .85; }
   .break-box { padding: 28px 22px 24px; }
 }
 

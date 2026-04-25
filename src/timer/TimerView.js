@@ -26,7 +26,7 @@ export function mountTimerView(container) {
         <div class="panel-title">Deep Work Timer</div>
         <div class="session-body">
           <div class="session-left">
-            <div>
+            <div class="task-block">
               <div class="task-kicker">Active mission</div>
               <div class="task-name" id="taskDisplay">Untitled <em>Flow</em></div>
             </div>
