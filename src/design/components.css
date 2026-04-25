@@ -404,7 +404,7 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 @media (max-width: 860px) {
   #dw-view .session-body { flex-direction: column; }
   #dw-view .session-right { width: 100%; align-items: center; }
-  #dw-view .btn-col { width: 100%; max-width: 300px; }
+  #dw-view .btn-col { width: 100%; max-width: none; }
   #dw-view .stats-grid { grid-template-columns: repeat(2,1fr); }
   #dw-view .body-grid  { grid-template-columns: 1fr; }
   #dw-view .goal-body  { grid-template-columns: 1fr; }
@@ -412,11 +412,29 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 }
 @media (max-width: 520px) {
   #dw-view .app { padding: 14px 12px 40px; }
-  #dw-view .setup-row { grid-template-columns: 1fr; }
 }
 @media (max-width: 599px) {
   /* Extra bottom padding so content clears the fixed bottom auth widget */
   #dw-view .app { padding-bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
+  /* Fields — full width on phones */
+  #dw-view .setup-row          { grid-template-columns: 1fr; }
+  #dw-view .field input,
+  #dw-view .field select       { height: 44px; font-size: 1rem; }
+  /* Buttons — full width, tappable */
+  #dw-view .btn-col            { max-width: none; gap: 9px; }
+  #dw-view .btn                { min-height: 50px; font-size: .88rem; border-radius: 8px; }
+  #dw-view .btn-start          { min-height: 56px; font-size: .95rem; }
+  #dw-view .btn-stop,
+  #dw-view .btn-reset          { min-height: 50px; }
+  /* Custom duration — wider number input */
+  .custom-minutes-row          { flex-wrap: wrap; gap: 10px; width: 100%; }
+  .custom-minutes-row input[type="number"] { width: 80px; height: 38px; font-size: .82rem; }
+  /* Stats mini-widgets — 2-column with more breathing room */
+  #dw-view .stats-grid         { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  #dw-view .stat               { padding: 12px 14px; }
+  #dw-view .stat-value         { font-size: clamp(20px, 5.5vw, 28px); }
+  /* Cloud sync chip full width */
+  #dw-view .dw-cloud-chip      { width: 100%; }
 }
 
 /* ── Repetition Tracker View ── */
@@ -871,9 +889,10 @@ tr.dragging { opacity: .4; }
 .break-actions .btn { min-width: 130px; }
 
 @media (max-width: 599px) {
-  .mode-row { gap: 4px; }
-  .mode-btn  { padding: 6px 2px 5px; }
-  .mode-name { font-size: .5rem; }
+  .mode-row  { gap: 6px; width: 100%; }
+  .mode-btn  { min-height: 54px; padding: 10px 4px 8px; border-radius: 8px; }
+  .mode-name { font-size: .62rem; letter-spacing: .08em; }
+  .mode-dur  { font-size: .55rem; opacity: .85; }
   .break-box { padding: 28px 22px 24px; }
 }
 
@@ -920,7 +939,13 @@ tr.dragging { opacity: .4; }
 }
 #dw-view .pomo-auto-label:hover { color: var(--neon-cyan); }
 #dw-view .pomo-auto-label input { accent-color: var(--neon-cyan); }
-@media (max-width: 599px) { #dw-view .pomo-config-row { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 599px) {
+  #dw-view .pomo-config-row   { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
+  #dw-view .pomo-presets      { gap: 8px; }
+  #dw-view .pomo-preset       { flex: 1; text-align: center; padding: 7px 10px; font-size: .65rem; min-height: 36px; }
+  #dw-view .pomo-inputs       { flex-wrap: wrap; gap: 8px; align-items: center; }
+  #dw-view .pomo-inputs input[type="number"] { width: 60px; height: 34px; font-size: .75rem; }
+}
 
 /* ── Phase badge in arc center ── */
 #dw-view .phase-badge {
