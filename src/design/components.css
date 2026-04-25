@@ -378,7 +378,13 @@ textarea.form-control { resize: vertical; min-height: 72px; line-height: 1.5; pa
 .sr-strong  { background: rgba(57,255,20,0.07);   color: var(--neon-green);  border-color: rgba(57,255,20,0.25);  }
 
 /* ── Analytics View ── */
-#an-view { padding-bottom: 60px; }
+#an-view .container { max-width: 1300px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; display: grid; gap: 14px; }
+@media (max-width: 768px) { #an-view .container { padding: 14px 12px 40px; } }
+@media (max-width: 599px) { #an-view .container { padding-bottom: 40px; } }
+
+/* Safety net: hide any section that hasn't been populated yet */
+.an-section:empty { padding: 0; background: transparent; border-color: transparent; margin: 0; }
+.an-kpi-row:empty { margin: 0; }
 
 /* Hero header */
 .an-hero { display: flex; align-items: center; gap: 18px; padding: 6px 4px 18px; }
@@ -421,10 +427,10 @@ textarea.form-control { resize: vertical; min-height: 72px; line-height: 1.5; pa
 .an-kpi-purple .an-kpi-val { color: var(--neon-purple); text-shadow: 0 0 16px rgba(157,0,255,0.35);  }
 
 /* Sections */
-.an-section { background: var(--bg-glass); border: 1px solid var(--border-dim); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.an-section { background: var(--bg-glass); border: 1px solid var(--border-dim); border-radius: 8px; padding: 20px; }
 .an-section-title { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: rgba(0,245,255,0.5); margin-bottom: 16px; }
-.an-row { display: flex; gap: 16px; }
-.an-row > .an-section { flex: 1; }
+.an-row { display: flex; gap: 14px; }
+.an-row > .an-section { flex: 1; margin: 0; }
 @media (max-width: 768px) { .an-row { flex-direction: column; } }
 
 /* 14-day vertical bar chart */

@@ -62,6 +62,12 @@ export function mountAnalyticsView(container) {
   Nav.onSwitch(v => { if (v === 'an') _render(); });
   timerStore.subscribe(_render);
   trackerStore.subscribe(_render);
+
+  // Pre-populate sections on mount so no empty styled boxes appear on first visit
+  const _s0 = timerStore.get().sessions || [];
+  const _t0 = trackerStore.get();
+  _renderKPIs(_s0); _renderDailyChart(_s0); _renderIntensity(_s0);
+  _renderDow(_s0);  _renderTopTasks(_s0);   _renderLearning(_t0);
 }
 
 function _renderKPIs(sessions) {
