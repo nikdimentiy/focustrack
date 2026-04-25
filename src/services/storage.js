@@ -1,17 +1,23 @@
+import Dexie from 'dexie';
+
+const db = new Dexie('FocusTrackDB');
+db.version(1).stores({ kv: 'key' });
+
 const K = {
   TIMER:    'deepWorkTimerState',
   SESSIONS: 'deepWorkSessions',
   TOPICS:   'spacedRepetitionData',
 };
 
-const parse = key => { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; } };
+const get = async key => { const row = await db.kv.get(key); return row?.value ?? null; };
+const put = (key, value) => db.kv.put({ key, value });
 
-export const loadTimerState  = () => parse(K.TIMER);
-export const loadSessions    = () => parse(K.SESSIONS) ?? [];
-export const loadTopics      = () => parse(K.TOPICS) ?? [];
+export const loadTimerState  = () => get(K.TIMER);
+export const loadSessions    = async () => (await get(K.SESSIONS)) ?? [];
+export const loadTopics      = async () => (await get(K.TOPICS)) ?? [];
 
-export const saveTimerState  = v => localStorage.setItem(K.TIMER,    JSON.stringify(v));
-export const saveSessions    = v => localStorage.setItem(K.SESSIONS, JSON.stringify(v));
-export const saveTopics      = v => localStorage.setItem(K.TOPICS,   JSON.stringify(v));
+export const saveTimerState  = v => put(K.TIMER,    v);
+export const saveSessions    = v => put(K.SESSIONS, v);
+export const saveTopics      = v => put(K.TOPICS,   v);
 
-export const clearAll = () => localStorage.clear();
+export const clearAll = () => db.kv.clear();

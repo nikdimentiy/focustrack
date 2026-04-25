@@ -1,9 +1,12 @@
 let _state = {
   running: false,
+  paused: false,
   elapsedSeconds: 0,
   sessionStartedAt: null,
   task: '',
   intensity: 'Focus',
+  timerMode: 'deepwork',
+  customTarget: 3600,
   sessions: [],
   heatmapRange: '7days',
 };

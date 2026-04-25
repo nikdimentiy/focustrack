@@ -1,13 +1,17 @@
 import { trackerStore } from '../store/trackerStore.js';
-import { deleteTopic, toggleRepeat, refreshStatuses, exportTopics, importTopics } from './trackerEngine.js';
+import { deleteTopic, toggleRepeat, reorderTopics, refreshStatuses, exportTopics, importTopics } from './trackerEngine.js';
 import { openModal, mountModal } from './TopicModal.js';
 import { Nav } from '../shared/Nav.js';
 import { setTask, startTimer, stopTimer } from '../timer/timerEngine.js';
 import { toast } from '../shared/Toast.js';
+import { clearAll } from '../services/storage.js';
 import { calcProgress, readableDateLong } from '../shared/utils.js';
 
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-let _activeTag = null;
+let _activeTag  = null;
+let _qpicker    = null;
+let _qpCallback = null;
+let _dragSrcIdx = -1;
 
 function _srStrength(ease) {
   const e = ease ?? 2.5;
@@ -21,6 +25,69 @@ const _svg = {
   edit:  `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`,
   del:   `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`,
 };
+
+// ── Quality picker ────────────────────────────────────────────────────────────
+
+function _showQP(anchor, callback) {
+  if (!_qpicker) { callback('good'); return; }
+  _qpCallback = callback;
+  const rect = anchor.getBoundingClientRect();
+  let top  = rect.bottom + 6;
+  let left = rect.left - 70;
+  if (left < 4) left = 4;
+  if (left + 130 > window.innerWidth) left = window.innerWidth - 134;
+  if (top + 166 > window.innerHeight) top = rect.top - 172;
+  _qpicker.style.top  = top  + 'px';
+  _qpicker.style.left = left + 'px';
+  _qpicker.classList.add('visible');
+  requestAnimationFrame(() => document.addEventListener('click', _onDocClick));
+}
+
+function _closeQP() {
+  _qpicker?.classList.remove('visible');
+  document.removeEventListener('click', _onDocClick);
+}
+
+function _onDocClick(e) {
+  if (_qpicker && !_qpicker.contains(e.target)) _closeQP();
+}
+
+// ── DnD ──────────────────────────────────────────────────────────────────────
+
+function _wireDnD(body) {
+  let _over = null;
+  body.querySelectorAll('tr[draggable="true"]').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      _dragSrcIdx = Number(row.dataset.dragIdx);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => row.classList.add('dragging'), 0);
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      if (_over) { _over.classList.remove('drag-over'); _over = null; }
+      _dragSrcIdx = -1;
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (_over !== row) {
+        if (_over) _over.classList.remove('drag-over');
+        _over = row;
+        row.classList.add('drag-over');
+      }
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetIdx = Number(row.dataset.dragIdx);
+      row.classList.remove('drag-over');
+      _over = null;
+      if (_dragSrcIdx >= 0 && _dragSrcIdx !== targetIdx) reorderTopics(_dragSrcIdx, targetIdx);
+      _dragSrcIdx = -1;
+    });
+  });
+}
+
+// ── Mount ─────────────────────────────────────────────────────────────────────
 
 export function mountTrackerView(container) {
   container.innerHTML = `
@@ -92,6 +159,7 @@ export function mountTrackerView(container) {
         <div class="tag-filter-bar" id="tag-filter-bar" style="display:none"></div>
         <table id="topics-table">
           <thead><tr>
+            <th class="drag-col"></th>
             <th>Topic</th><th class="started-col">Started</th><th>Next Review</th>
             <th>Status</th><th>Day 1</th><th>Day 3</th><th>Day 7</th><th>Day 21</th><th>Actions</th>
           </tr></thead>
@@ -109,14 +177,41 @@ export function mountTrackerView(container) {
   document.getElementById('date-text').textContent =
     new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  // Quality picker singleton
+  if (!document.getElementById('quality-picker')) {
+    _qpicker = document.createElement('div');
+    _qpicker.id = 'quality-picker';
+    _qpicker.className = 'quality-picker';
+    _qpicker.innerHTML = `
+      <div class="qp-label">// recall</div>
+      <button class="qp-btn qp-again" data-q="again">Again</button>
+      <button class="qp-btn qp-hard"  data-q="hard">Hard</button>
+      <button class="qp-btn qp-good"  data-q="good">Good</button>
+      <button class="qp-btn qp-easy"  data-q="easy">Easy</button>`;
+    document.body.appendChild(_qpicker);
+    _qpicker.querySelectorAll('.qp-btn').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const quality = btn.dataset.q;
+        _closeQP();
+        _qpCallback?.(quality);
+        _qpCallback = null;
+      })
+    );
+  } else {
+    _qpicker = document.getElementById('quality-picker');
+  }
+
   mountModal(() => toast.show('Topic saved', 'success'));
 
   container.querySelector('#add-topic').addEventListener('click', () => openModal());
   container.querySelector('#update-status').addEventListener('click', () => { refreshStatuses(); toast.show('Status updated', 'success'); });
   container.querySelector('#save-data').addEventListener('click', () => { exportTopics(); toast.show('Data exported', 'success'); });
   container.querySelector('#load-data').addEventListener('click', () => container.querySelector('#file-input').click());
-  container.querySelector('#wipe-data').addEventListener('click', () => {
-    if (confirm('Wipe ALL local data (timer sessions, topics, all stored data)? Cannot be undone.')) { localStorage.clear(); location.reload(); }
+  container.querySelector('#wipe-data').addEventListener('click', async () => {
+    if (confirm('Wipe ALL local data (timer sessions, topics, all stored data)? Cannot be undone.')) {
+      await clearAll();
+      location.reload();
+    }
   });
   container.querySelector('#file-input').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
@@ -183,11 +278,13 @@ function _renderTable(search = '') {
       : _activeTag
         ? `No topics with tag "${_esc(_activeTag)}"`
         : `No topics found matching "${_esc(search)}"`;
-    body.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em">${msg}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em">${msg}</td></tr>`;
     if (cards) cards.innerHTML = '';
     _updateTrackerStats(topics);
     return;
   }
+
+  const canDrag = !_activeTag && !search;
 
   // ── Desktop table rows ──
   body.innerHTML = filtered.map(topic => {
@@ -196,7 +293,8 @@ function _renderTable(search = '') {
     const sc        = topic.status.toLowerCase();
     const notesHtml = topic.notes ? `<div class="topic-notes-preview" title="${_esc(topic.notes)}">${_esc(topic.notes)}</div>` : '';
     const tagsHtml  = (topic.tags || []).map(tag => `<span class="tag-chip">${_esc(tag)}</span>`).join('');
-    return `<tr>
+    return `<tr data-drag-idx="${i}" ${canDrag ? 'draggable="true"' : ''}>
+      <td class="drag-handle${canDrag ? '' : ' drag-disabled'}">${canDrag ? '⠿' : ''}</td>
       <td><div class="topic-cell">
         <div class="topic-icon">${i + 1}</div>
         <div class="topic-info">
@@ -220,6 +318,8 @@ function _renderTable(search = '') {
       </div></td>
     </tr>`;
   }).join('');
+
+  if (canDrag) _wireDnD(body);
 
   // ── Mobile cards ──
   if (cards) {
@@ -266,20 +366,28 @@ function _renderTable(search = '') {
 }
 
 function _wireEvents(root, topics) {
-  root.querySelectorAll('.custom-checkbox').forEach(cb =>
-    cb.addEventListener('change', e => {
+  root.querySelectorAll('.custom-checkbox').forEach(cb => {
+    cb.addEventListener('click', e => {
       const idx    = Number(e.target.dataset.i);
       const field  = e.target.dataset.f;
-      const wasOff = !topics[idx][field];
-      toggleRepeat(idx, field);
+      const wasOff = !topics[idx]?.[field];
       if (wasOff) {
-        const updated = trackerStore.get()[idx];
-        const easeVal = updated.ease ?? 2.5;
-        const strength = easeVal < 1.6 ? 'Weak' : easeVal < 2.2 ? 'Growing' : 'Strong';
-        toast.show(`Next review: ${readableDateLong(updated.nextRepeat)} · SR: ${strength}`, 'success');
+        e.preventDefault();
+        _showQP(e.target, quality => {
+          toggleRepeat(idx, field, quality);
+          const updated = trackerStore.get()[idx];
+          if (updated) {
+            const easeVal   = updated.ease ?? 2.5;
+            const strength  = easeVal < 1.6 ? 'Weak' : easeVal < 2.2 ? 'Growing' : 'Strong';
+            const label     = quality.charAt(0).toUpperCase() + quality.slice(1);
+            toast.show(`${label} · Next: ${readableDateLong(updated.nextRepeat)} · SR: ${strength}`, 'success');
+          }
+        });
+      } else {
+        toggleRepeat(idx, field, 'good');
       }
-    })
-  );
+    });
+  });
   root.querySelectorAll('.edit-btn').forEach(btn =>
     btn.addEventListener('click', e => { const i = Number(e.currentTarget.dataset.i); openModal(topics[i], i); })
   );

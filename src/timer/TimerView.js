@@ -1,12 +1,19 @@
 import { timerStore } from '../store/timerStore.js';
-import { startTimer, stopTimer, resetTimer, setTask, setIntensity, updateSession, SESSION_TARGET, ARC_FULL } from './timerEngine.js';
+import { startTimer, stopTimer, pauseTimer, resetTimer, setTask, setIntensity, setTimerMode, updateSession, onSessionComplete, getTarget, ARC_FULL } from './timerEngine.js';
 import { onSyncStatus } from '../services/syncEngine.js';
+import { unlockAudio, requestNotifyPermission } from '../services/notifications.js';
 import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart } from '../shared/utils.js';
 import { toast } from '../shared/Toast.js';
 
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const WEEKLY_TARGET = 300;
+
+const _MODE_CFG = {
+  pomodoro: { label: 'Pomodoro', dur: '25 min', break: 'Take a 5-minute break!' },
+  deepwork: { label: 'Deep Work', dur: '90 min', break: 'Take a well-earned break.' },
+  custom:   { label: 'Custom',   dur: null,     break: 'Good work — rest up.' },
+};
 
 export function mountTimerView(container) {
   container.innerHTML = `
@@ -37,6 +44,25 @@ export function mountTimerView(container) {
                 </select>
               </div>
             </div>
+            <div class="mode-row" id="modeRow">
+              <button class="mode-btn" data-mode="pomodoro">
+                <span class="mode-name">Pomodoro</span>
+                <span class="mode-dur">25 min</span>
+              </button>
+              <button class="mode-btn active" data-mode="deepwork">
+                <span class="mode-name">Deep Work</span>
+                <span class="mode-dur">90 min</span>
+              </button>
+              <button class="mode-btn" data-mode="custom">
+                <span class="mode-name">Custom</span>
+                <span class="mode-dur" id="customDurLabel">60 min</span>
+              </button>
+            </div>
+            <div class="custom-minutes-row" id="customRow" style="display:none">
+              <label for="customMinutes">Duration</label>
+              <input type="number" id="customMinutes" min="5" max="480" value="60" />
+              <span>min</span>
+            </div>
             <div class="stats-grid">
               <div class="stat"><div class="stat-label">Deep Min</div><div class="stat-value" id="todayMinutes">0</div><div class="stat-sub">Today total</div></div>
               <div class="stat"><div class="stat-label">Sessions</div><div class="stat-value" id="todaySessions">0</div><div class="stat-sub">Completed today</div></div>
@@ -55,15 +81,16 @@ export function mountTimerView(container) {
               <div class="arc-center">
                 <div class="timer-pct" id="timerPct">0%</div>
                 <div class="timer-digits" id="timerEl">00:00:00</div>
-                <div class="timer-sub">elapsed</div>
+                <div class="timer-sub" id="timerSub">elapsed</div>
               </div>
             </div>
             <div class="btn-col">
               <button class="btn btn-start" id="startBtn">▶&ensp;Start Session</button>
-              <div class="btn-pair" id="btnPair">
-                <button class="btn btn-stop" id="stopBtn"><i class="fas fa-stop-circle"></i>&ensp;Stop</button>
-                <button class="btn btn-reset" id="resetBtn"><i class="fas fa-undo-alt"></i>&ensp;Reset</button>
+              <div class="btn-pair" id="btnPair" style="display:none">
+                <button class="btn btn-pause" id="pauseResumeBtn"><i class="fas fa-pause"></i>&ensp;Pause</button>
+                <button class="btn btn-stop"  id="stopBtn"><i class="fas fa-stop-circle"></i>&ensp;Stop</button>
               </div>
+              <button class="btn btn-reset" id="resetBtn" style="display:none"><i class="fas fa-undo-alt"></i>&ensp;Reset</button>
               <div id="dwCloudChip" class="dw-cloud-chip" style="display:none">
                 <span class="dw-cloud-dot" id="dwCloudDot"></span>
                 <span id="dwCloudLabel">cloud sync</span>
@@ -122,24 +149,73 @@ export function mountTimerView(container) {
           <div class="empty-msg" id="emptyDW">No sessions yet — start your first block.</div>
         </div>
       </div>
+
+      <div id="break-overlay" class="break-overlay">
+        <div class="break-box">
+          <div class="break-check">✓</div>
+          <div class="break-title" id="breakTitle">Session Complete</div>
+          <div class="break-detail" id="breakDetail">Take a well-earned break!</div>
+          <div class="break-actions">
+            <button class="btn btn-start" id="breakNewSession">▶&ensp;New Session</button>
+            <button class="btn btn-reset" id="breakDismiss">Dismiss</button>
+          </div>
+        </div>
+      </div>
     </div>`;
 
   _buildTicks();
 
-  const arcFill   = container.querySelector('#arcFill');
-  const timerEl   = container.querySelector('#timerEl');
-  const timerPct  = container.querySelector('#timerPct');
-  const startBtn  = container.querySelector('#startBtn');
-  const stopBtn   = container.querySelector('#stopBtn');
-  const resetBtn  = container.querySelector('#resetBtn');
-  const btnPair   = container.querySelector('#btnPair');
-  const taskInput = container.querySelector('#taskInput');
-  const taskDisp  = container.querySelector('#taskDisplay');
-  const intensity = container.querySelector('#intensitySelect');
+  const arcFill        = container.querySelector('#arcFill');
+  const timerEl        = container.querySelector('#timerEl');
+  const timerPct       = container.querySelector('#timerPct');
+  const timerSub       = container.querySelector('#timerSub');
+  const startBtn       = container.querySelector('#startBtn');
+  const btnPair        = container.querySelector('#btnPair');
+  const pauseResumeBtn = container.querySelector('#pauseResumeBtn');
+  const stopBtn        = container.querySelector('#stopBtn');
+  const resetBtn       = container.querySelector('#resetBtn');
+  const taskInput      = container.querySelector('#taskInput');
+  const taskDisp       = container.querySelector('#taskDisplay');
+  const intensity      = container.querySelector('#intensitySelect');
+  const modeRow        = container.querySelector('#modeRow');
+  const customRow      = container.querySelector('#customRow');
+  const customMinutes  = container.querySelector('#customMinutes');
+  const customDurLabel = container.querySelector('#customDurLabel');
+  const breakOverlay   = container.querySelector('#break-overlay');
 
-  startBtn.addEventListener('click', startTimer);
+  // ── Mode selector ──────────────────────────────────────────────────────────
+  modeRow.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      const mins = mode === 'custom' ? (Number(customMinutes.value) || 60) : null;
+      setTimerMode(mode, mins ? mins * 60 : undefined);
+    });
+  });
+
+  customMinutes.addEventListener('change', () => {
+    const mins = Math.max(5, Math.min(480, Number(customMinutes.value) || 60));
+    customMinutes.value = mins;
+    customDurLabel.textContent = `${mins} min`;
+    setTimerMode('custom', mins * 60);
+  });
+
+  // ── Timer buttons ──────────────────────────────────────────────────────────
+  startBtn.addEventListener('click', () => {
+    unlockAudio();
+    requestNotifyPermission();
+    startTimer();
+  });
+
+  pauseResumeBtn.addEventListener('click', () => {
+    const s = timerStore.get();
+    if (s.running) pauseTimer();
+    else startTimer();
+  });
+
   stopBtn.addEventListener('click', stopTimer);
   resetBtn.addEventListener('click', resetTimer);
+
+  // ── Task input ─────────────────────────────────────────────────────────────
   taskInput.addEventListener('input', e => { setTask(e.target.value); _updateTaskDisplay(taskDisp, e.target.value); });
   intensity.addEventListener('change', e => setIntensity(e.target.value));
 
@@ -175,31 +251,65 @@ export function mountTimerView(container) {
     })
   );
 
-  const syncBtns = (running) => {
-    startBtn.style.display = running ? 'none' : '';
-    btnPair.style.display  = running ? 'flex' : 'none';
+  // ── Break overlay ──────────────────────────────────────────────────────────
+  const _showBreak = ({ mode, minutes, task }) => {
+    const cfg = _MODE_CFG[mode] ?? _MODE_CFG.custom;
+    document.getElementById('breakTitle').textContent  = `${cfg.label} complete!`;
+    document.getElementById('breakDetail').textContent = `${minutes} min · ${task || 'Untitled Flow'} — ${cfg.break}`;
+    breakOverlay.classList.add('active');
+    const _autoClose = setTimeout(() => breakOverlay.classList.remove('active'), 30000);
+    const _close = () => { clearTimeout(_autoClose); breakOverlay.classList.remove('active'); };
+    container.querySelector('#breakDismiss').onclick    = _close;
+    container.querySelector('#breakNewSession').onclick = () => { _close(); startTimer(); };
+  };
+
+  onSessionComplete(_showBreak);
+  breakOverlay.addEventListener('click', e => { if (e.target === breakOverlay) breakOverlay.classList.remove('active'); });
+
+  // ── Sync state → UI ────────────────────────────────────────────────────────
+  const syncBtns = s => {
+    const active = s.running || s.paused;
+    startBtn.style.display  = active ? 'none' : '';
+    btnPair.style.display   = active ? 'flex' : 'none';
+    resetBtn.style.display  = s.paused ? '' : 'none';
+    pauseResumeBtn.innerHTML = s.running
+      ? '<i class="fas fa-pause"></i>&ensp;Pause'
+      : '▶&ensp;Resume';
+    timerSub.textContent = s.paused ? 'paused' : 'elapsed';
+    modeRow.querySelectorAll('.mode-btn').forEach(b => { b.disabled = active; });
+    customMinutes.disabled = active;
+    // Mode buttons active state
+    modeRow.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === s.timerMode));
+    // Custom row visibility
+    customRow.style.display = s.timerMode === 'custom' ? '' : 'none';
+    customDurLabel.textContent = `${Math.round((s.customTarget || 3600) / 60)} min`;
   };
 
   timerStore.subscribe(s => {
     timerEl.textContent = fmtTime(s.elapsedSeconds);
-    const pct = Math.min(s.elapsedSeconds / SESSION_TARGET, 1);
+    const target = getTarget(s);
+    const pct = Math.min(s.elapsedSeconds / target, 1);
     arcFill.style.strokeDashoffset = ARC_FULL - ARC_FULL * pct;
     timerPct.textContent = Math.round(pct * 100) + '%';
-    syncBtns(s.running);
+    syncBtns(s);
     _updateStats(s);
   });
 
   onSyncStatus(status => _updateChip(container, status));
   mountSessionEditModal();
 
+  // ── Initial render ─────────────────────────────────────────────────────────
   const s = timerStore.get();
-  taskInput.value = s.task;
-  intensity.value = s.intensity;
+  taskInput.value  = s.task;
+  intensity.value  = s.intensity;
+  customMinutes.value = Math.round((s.customTarget || 3600) / 60);
   _updateTaskDisplay(taskDisp, s.task);
-  syncBtns(s.running);
+  syncBtns(s);
   timerEl.textContent = fmtTime(s.elapsedSeconds);
-  timerPct.textContent = Math.round(Math.min(s.elapsedSeconds / SESSION_TARGET, 1) * 100) + '%';
-  arcFill.style.strokeDashoffset = ARC_FULL - ARC_FULL * Math.min(s.elapsedSeconds / SESSION_TARGET, 1);
+  const initTarget = getTarget(s);
+  const initPct = Math.min(s.elapsedSeconds / initTarget, 1);
+  timerPct.textContent = Math.round(initPct * 100) + '%';
+  arcFill.style.strokeDashoffset = ARC_FULL - ARC_FULL * initPct;
   _updateStats(s);
 }
 
@@ -306,11 +416,7 @@ function mountSessionEditModal() {
   const cancelBtn = document.getElementById('session-cancel-btn');
   if (!modal || !form || !cancelBtn) return;
 
-  const close = () => {
-    modal.classList.remove('active');
-    setTimeout(() => form.reset(), 300);
-  };
-
+  const close = () => { modal.classList.remove('active'); setTimeout(() => form.reset(), 300); };
   cancelBtn.addEventListener('click', close);
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
 

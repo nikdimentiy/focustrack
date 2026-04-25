@@ -2,6 +2,7 @@ import { timerStore } from '../store/timerStore.js';
 import { trackerStore } from '../store/trackerStore.js';
 import { Nav } from '../shared/Nav.js';
 import { fmtDate, calcStreak, calcMaxStreak, weekStart, byDate, calcProgress, readableDateLong } from '../shared/utils.js';
+import { exportSessionsCSV, exportFullBackup } from '../tracker/trackerEngine.js';
 
 const _esc    = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const _srBadge = ease => {
@@ -10,6 +11,8 @@ const _srBadge = ease => {
   if (e < 2.2) return '<span class="sr-badge sr-growing">Growing</span>';
   return '<span class="sr-badge sr-strong">Strong</span>';
 };
+
+let _chartRange = '14d';
 
 export function mountAnalyticsView(container) {
   container.innerHTML = `
@@ -37,6 +40,7 @@ export function mountAnalyticsView(container) {
           </div>
         </div>
       </div>
+      <div id="an-controls" class="an-section"></div>
       <div id="an-kpis" class="an-kpi-row"></div>
       <div id="an-daily" class="an-section"></div>
       <div class="an-row">
@@ -47,12 +51,30 @@ export function mountAnalyticsView(container) {
       <div id="an-learning" class="an-section"></div>
     </div>`;
 
+  // Event delegation — persists even as controls section is re-rendered
+  container.addEventListener('click', e => {
+    const rangeBtn  = e.target.closest('[data-range]');
+    const exportBtn = e.target.closest('[data-export]');
+    if (rangeBtn) {
+      _chartRange = rangeBtn.dataset.range;
+      const sessions = timerStore.get().sessions || [];
+      _renderControls(_chartRange);
+      _renderDailyChart(sessions, _chartRange);
+    }
+    if (exportBtn) {
+      const type = exportBtn.dataset.export;
+      if (type === 'csv')  exportSessionsCSV();
+      if (type === 'json') exportFullBackup();
+    }
+  });
+
   function _render() {
     if (!document.body.classList.contains('theme-an')) return;
     const sessions = timerStore.get().sessions || [];
     const topics   = trackerStore.get();
+    _renderControls(_chartRange);
     _renderKPIs(sessions);
-    _renderDailyChart(sessions);
+    _renderDailyChart(sessions, _chartRange);
     _renderIntensity(sessions);
     _renderDow(sessions);
     _renderTopTasks(sessions);
@@ -63,12 +85,71 @@ export function mountAnalyticsView(container) {
   timerStore.subscribe(_render);
   trackerStore.subscribe(_render);
 
-  // Pre-populate sections on mount so no empty styled boxes appear on first visit
   const _s0 = timerStore.get().sessions || [];
   const _t0 = trackerStore.get();
-  _renderKPIs(_s0); _renderDailyChart(_s0); _renderIntensity(_s0);
-  _renderDow(_s0);  _renderTopTasks(_s0);   _renderLearning(_t0);
+  _renderControls(_chartRange);
+  _renderKPIs(_s0); _renderDailyChart(_s0, _chartRange); _renderIntensity(_s0);
+  _renderDow(_s0);  _renderTopTasks(_s0);                _renderLearning(_t0);
 }
+
+function _renderControls(range) {
+  const el = document.getElementById('an-controls');
+  if (!el) return;
+  const presets = [
+    { key: 'thisweek',  label: 'This Week'  },
+    { key: 'lastweek',  label: 'Last Week'  },
+    { key: 'thismonth', label: 'This Month' },
+    { key: '14d',       label: '14 Days'    },
+    { key: '30d',       label: '30 Days'    },
+  ];
+  const csvIcon  = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
+  const jsonIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>`;
+  el.innerHTML = `
+    <div class="an-controls-row">
+      <div class="an-controls-group">
+        <span class="an-controls-lbl">// range</span>
+        ${presets.map(p => `<button class="an-preset-btn${range === p.key ? ' active' : ''}" data-range="${p.key}">${p.label}</button>`).join('')}
+      </div>
+      <div class="an-controls-group">
+        <span class="an-controls-lbl">// export</span>
+        <button class="an-export-btn" data-export="csv">${csvIcon}Sessions CSV</button>
+        <button class="an-export-btn" data-export="json">${jsonIcon}Full Backup</button>
+      </div>
+    </div>`;
+}
+
+function _getDaysForRange(range) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (range === '30d') {
+    return Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - (29 - i)); return d; });
+  }
+  if (range === 'thisweek') {
+    const dow = (today.getDay() + 6) % 7; // Mon = 0
+    const monday = new Date(today); monday.setDate(today.getDate() - dow);
+    const days = [];
+    for (let d = new Date(monday); d <= today; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+    return days;
+  }
+  if (range === 'lastweek') {
+    const dow = (today.getDay() + 6) % 7;
+    const monday = new Date(today); monday.setDate(today.getDate() - dow - 7);
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
+  }
+  if (range === 'thismonth') {
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const days = [];
+    for (let d = new Date(first); d <= today; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+    return days;
+  }
+  // default: '14d'
+  return Array.from({ length: 14 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - (13 - i)); return d; });
+}
+
+const _RANGE_TITLES = {
+  '14d': '// 14-Day Activity', '30d': '// 30-Day Activity',
+  'thisweek': '// This Week', 'lastweek': '// Last Week', 'thismonth': '// This Month',
+};
 
 function _renderKPIs(sessions) {
   const el = document.getElementById('an-kpis');
@@ -99,18 +180,19 @@ function _renderKPIs(sessions) {
     </div>`;
 }
 
-function _renderDailyChart(sessions) {
+function _renderDailyChart(sessions, range = '14d') {
   const el = document.getElementById('an-daily');
   if (!el) return;
   const map  = byDate(sessions);
-  const days = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (13 - i));
-    return { date: fmtDate(d), day: d.getDate(), min: map[fmtDate(d)] || 0 };
-  });
-  const maxMin = Math.max(...days.map(d => d.min), 1);
+  const days = _getDaysForRange(range).map(d => ({
+    date: fmtDate(d), day: d.getDate(), min: map[fmtDate(d)] || 0,
+  }));
+  const maxMin   = Math.max(...days.map(d => d.min), 1);
+  const totalMin = days.reduce((s, d) => s + d.min, 0);
+  const title    = _RANGE_TITLES[range] || '// Activity';
 
   el.innerHTML = `
-    <div class="an-section-title">// 14-Day Activity</div>
+    <div class="an-section-title">${title} <span class="an-dim" style="font-size:.75em;font-weight:400">${(totalMin / 60).toFixed(1)}h total</span></div>
     <div class="an-bar-chart">
       ${days.map(d => `
         <div class="an-bar-col" title="${d.date}: ${d.min} min">

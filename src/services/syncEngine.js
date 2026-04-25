@@ -7,10 +7,15 @@ import { saveSessions, saveTopics } from './storage.js';
 import { calcStatus } from '../shared/utils.js';
 
 let _syncing = false;
+let _retryPending = false;
 const _subs = new Set();
 const notify = s => _subs.forEach(fn => fn(s));
 
 export const onSyncStatus = fn => { _subs.add(fn); return () => _subs.delete(fn); };
+
+window.addEventListener('online', () => {
+  if (_retryPending) { _retryPending = false; doSync(); }
+});
 
 export async function doSync() {
   if (_syncing) return;
@@ -26,7 +31,7 @@ export async function doSync() {
     for (const [ts, s] of cloudMap) { if (!localMap.has(ts)) merged.push(s); }
     merged.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     timerStore.set({ sessions: merged });
-    saveSessions(merged);
+    await saveSessions(merged);
 
     // --- Timer state ---
     const cloudTimer = await fetchCloudTimerState();
@@ -44,7 +49,7 @@ export async function doSync() {
     if (cloudTopics) {
       const withStatus = cloudTopics.map(t => ({ ...t, status: calcStatus(t.nextRepeat) }));
       trackerStore.set(withStatus);
-      saveTopics(withStatus);
+      await saveTopics(withStatus);
     } else {
       // push local topics to cloud on first login
       const localTopics = trackerStore.get();
@@ -55,6 +60,7 @@ export async function doSync() {
     setTimeout(() => notify('idle'), 3000);
   } catch (e) {
     console.error('Sync error:', e);
+    if (!navigator.onLine) _retryPending = true;
     notify('error');
     setTimeout(() => notify('idle'), 3000);
   } finally { _syncing = false; }

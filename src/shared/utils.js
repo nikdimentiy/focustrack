@@ -62,17 +62,16 @@ export const calcProgress = t => {
   return Math.round((c / 4) * 100);
 };
 
-export function adjustEase(ease, scheduledDate, completedDate) {
-  if (!scheduledDate || !completedDate) return ease;
-  const daysLate = Math.round(
-    (new Date(completedDate + 'T00:00:00') - new Date(scheduledDate + 'T00:00:00')) / 86400000
-  );
-  if (daysLate <= 1) return Math.min(3.0, ease + 0.1);
-  if (daysLate <= 3) return Math.max(1.3, ease - 0.15);
-  return Math.max(1.3, ease - 0.3);
+// SM-2 formula: quality = 'again'|'hard'|'good'|'easy'
+// Maps to q scores: again→1, hard→3, good→4, easy→5
+export function adjustEase(ease, quality) {
+  const q = { again: 1, hard: 3, good: 4, easy: 5 }[quality] ?? 4;
+  const delta = 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02);
+  return Math.min(3.0, Math.max(1.3, ease + delta));
 }
 
-export function computeNextRepeat(repeatKey, ease, today) {
+export function computeNextRepeat(repeatKey, ease, quality, today) {
+  const mult = { again: 0.3, hard: 0.7, good: 1.0, easy: 1.3 }[quality] ?? 1.0;
   const base = { repeat1: 3, repeat3: 7, repeat7: 14 }[repeatKey];
   if (base === undefined) {
     const d = new Date(today + 'T00:00:00');
@@ -80,6 +79,6 @@ export function computeNextRepeat(repeatKey, ease, today) {
     return fmtDate(d);
   }
   const d = new Date(today + 'T00:00:00');
-  d.setDate(d.getDate() + Math.max(1, Math.round(base * ease)));
+  d.setDate(d.getDate() + Math.max(1, Math.round(base * ease * mult)));
   return fmtDate(d);
 }

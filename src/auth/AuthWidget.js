@@ -97,10 +97,10 @@ export const AuthWidget = {
     }
   },
 
-  _wipeLocal() {
+  async _wipeLocal() {
     if (!confirm('WIPE ALL LOCAL CACHE?\n\nClears all locally stored sessions, topics, and timer state.\nCloud data is not affected.')) return;
     resetTimer();
-    clearAll();
+    await clearAll();
     timerStore.set({ running: false, elapsedSeconds: 0, sessionStartedAt: null, task: '', intensity: 'Focus', sessions: [] });
     trackerStore.set([]);
     toast.show('Local cache wiped', 'success');

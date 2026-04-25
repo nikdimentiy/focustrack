@@ -5,7 +5,8 @@ export const Nav = {
     container.innerHTML = `
       <button id="nav-dw" class="active">Deep Work Timer</button>
       <button id="nav-tr">Repetition Tracker</button>
-      <button id="nav-an">Analytics</button>`;
+      <button id="nav-an">Analytics</button>
+      <span id="sync-dot" class="nav-sync-dot" title="Not signed in"></span>`;
     container.querySelector('#nav-dw').addEventListener('click', () => Nav.switchTo('dw'));
     container.querySelector('#nav-tr').addEventListener('click', () => Nav.switchTo('tr'));
     container.querySelector('#nav-an').addEventListener('click', () => Nav.switchTo('an'));
