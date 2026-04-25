@@ -1,7 +1,8 @@
 import Dexie from 'dexie';
 
-const db = new Dexie('FocusTrackDB');
+export const db = new Dexie('FocusTrackDB');
 db.version(1).stores({ kv: 'key' });
+db.version(2).stores({ kv: 'key', pendingOps: '++id, type, createdAt' });
 
 const K = {
   TIMER:    'deepWorkTimerState',

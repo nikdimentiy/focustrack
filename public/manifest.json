@@ -10,5 +10,28 @@
     { "src": "/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Timer",
+      "short_name": "Start",
+      "description": "Open the Deep Work Timer and start a session immediately",
+      "url": "/?action=start-timer",
+      "icons": [{ "src": "/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Add Review Topic",
+      "short_name": "Add Topic",
+      "description": "Open the Tracker and add a new spaced-repetition topic",
+      "url": "/?action=add-topic",
+      "icons": [{ "src": "/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View your focus sessions and progress analytics",
+      "url": "/?view=an",
+      "icons": [{ "src": "/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

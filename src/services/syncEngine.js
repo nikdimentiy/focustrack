@@ -5,16 +5,17 @@ import { timerStore } from '../store/timerStore.js';
 import { trackerStore } from '../store/trackerStore.js';
 import { saveSessions, saveTopics } from './storage.js';
 import { calcStatus } from '../shared/utils.js';
+import { drainQueue } from './offlineQueue.js';
 
 let _syncing = false;
-let _retryPending = false;
 const _subs = new Set();
 const notify = s => _subs.forEach(fn => fn(s));
 
 export const onSyncStatus = fn => { _subs.add(fn); return () => _subs.delete(fn); };
 
-window.addEventListener('online', () => {
-  if (_retryPending) { _retryPending = false; doSync(); }
+window.addEventListener('online', async () => {
+  await drainQueue();
+  doSync();
 });
 
 function _topicKey(t) { return `${t.topic}||${t.dateOfLearning || t.dateLearned || ''}`; }
@@ -71,6 +72,9 @@ export async function doSync() {
   if (_syncing) return;
   _syncing = true; notify('syncing');
   try {
+    // Flush any ops that were queued while offline before pulling cloud state
+    await drainQueue();
+
     // --- Sessions ---
     const cloud = await fetchCloudSessions();
     const local = timerStore.get().sessions;
@@ -107,7 +111,6 @@ export async function doSync() {
         await saveTopics(withStatus);
       }
     } else {
-      // push local topics to cloud on first login
       const localTopics = trackerStore.get();
       if (localTopics.length) await cloudSaveTopics(localTopics);
     }
@@ -116,7 +119,6 @@ export async function doSync() {
     setTimeout(() => notify('idle'), 3000);
   } catch (e) {
     console.error('Sync error:', e);
-    if (!navigator.onLine) _retryPending = true;
     notify('error');
     setTimeout(() => notify('idle'), 3000);
   } finally { _syncing = false; }

@@ -1,7 +1,8 @@
 import { sb } from '../config/supabase.js';
 import { authState } from '../auth/authState.js';
+import { enqueue } from './offlineQueue.js';
 
-export async function cloudSaveSession(sess) {
+export async function cloudSaveSession(sess, { skipQueue = false } = {}) {
   const uid = authState.getUserId(); if (!uid) return;
   try {
     await sb.from('dw_sessions').insert({
@@ -9,7 +10,11 @@ export async function cloudSaveSession(sess) {
       minutes: sess.minutes, date: sess.date,
       timestamp: sess.timestamp, started_at: sess.startedAt,
     });
-  } catch (e) { console.error('cloudSaveSession:', e); }
+  } catch (e) {
+    console.error('cloudSaveSession:', e);
+    if (skipQueue) throw e;
+    await enqueue('saveSession', sess);
+  }
 }
 
 export async function fetchCloudSessions() {

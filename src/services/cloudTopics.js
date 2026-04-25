@@ -1,7 +1,8 @@
 import { sb } from '../config/supabase.js';
 import { authState } from '../auth/authState.js';
+import { enqueue } from './offlineQueue.js';
 
-export async function cloudSaveTopics(topics) {
+export async function cloudSaveTopics(topics, { skipQueue = false } = {}) {
   const uid = authState.getUserId(); if (!uid) return;
   try {
     await sb.from('repetition_topics').delete().eq('user_id', uid);
@@ -16,7 +17,11 @@ export async function cloudSaveTopics(topics) {
         }))
       );
     }
-  } catch (e) { console.error('cloudSaveTopics:', e); }
+  } catch (e) {
+    console.error('cloudSaveTopics:', e);
+    if (skipQueue) throw e;
+    await enqueue('saveTopics', topics);
+  }
 }
 
 export async function fetchCloudTopics() {

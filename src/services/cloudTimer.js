@@ -1,7 +1,8 @@
 import { sb } from '../config/supabase.js';
 import { authState } from '../auth/authState.js';
+import { enqueue } from './offlineQueue.js';
 
-export async function cloudSaveTimerState(s) {
+export async function cloudSaveTimerState(s, { skipQueue = false } = {}) {
   const uid = authState.getUserId(); if (!uid) return;
   try {
     await sb.from('timer_state').upsert({
@@ -10,7 +11,11 @@ export async function cloudSaveTimerState(s) {
       task: s.task, intensity: s.intensity,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
-  } catch (e) { console.error('cloudSaveTimerState:', e); }
+  } catch (e) {
+    console.error('cloudSaveTimerState:', e);
+    if (skipQueue) throw e;
+    await enqueue('saveTimerState', s);
+  }
 }
 
 export async function fetchCloudTimerState() {
