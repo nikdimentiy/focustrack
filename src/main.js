@@ -6,7 +6,6 @@ import { timerStore } from './store/timerStore.js';
 import { trackerStore } from './store/trackerStore.js';
 import { loadTimerState, loadSessions, loadTopics } from './services/storage.js';
 import { restoreTimer, startTimer, stopTimer } from './timer/timerEngine.js';
-import { openModal } from './tracker/TopicModal.js';
 import { calcStatus } from './shared/utils.js';
 
 import { AuthWidget } from './auth/AuthWidget.js';
@@ -14,6 +13,7 @@ import { initAuth } from './auth/authState.js';
 import { doSync } from './services/syncEngine.js';
 import { Nav } from './shared/Nav.js';
 import { toast } from './shared/Toast.js';
+import { mountFooterWidget, mountInfoButton } from './shared/FooterWidget.js';
 import { mountTimerView } from './timer/TimerView.js';
 import { mountTrackerView } from './tracker/TrackerView.js';
 import { mountAnalyticsView } from './analytics/AnalyticsView.js';
@@ -29,6 +29,8 @@ function boot() {
   restoreTimer(savedState, savedSessions);
 
   // Mount UI
+  mountFooterWidget(document.getElementById('footer-widget'));
+  mountInfoButton(document.getElementById('info-btn'));
   toast.mount(document.getElementById('toast-container'));
   AuthWidget.mount(document.getElementById('auth-widget'));
 
@@ -61,10 +63,6 @@ function boot() {
     if (e.key === ' ' && _currentView === 'dw') {
       e.preventDefault();
       timerStore.get().running ? stopTimer() : startTimer();
-      return;
-    }
-    if ((e.key === 'n' || e.key === 'N') && _currentView === 'tr') {
-      openModal();
       return;
     }
   });
