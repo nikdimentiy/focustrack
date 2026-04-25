@@ -1,3 +1,4 @@
+import './design/fonts.css';
 import './design/tokens.css';
 import './design/base.css';
 import './design/components.css';
@@ -74,7 +75,8 @@ async function boot() {
     const inInput = tag === 'input' || tag === 'textarea' || tag === 'select';
     const modalOpen = document.getElementById('topic-modal')?.classList.contains('active') ||
                       document.getElementById('session-edit-modal')?.classList.contains('active') ||
-                      document.getElementById('settings-modal')?.classList.contains('active');
+                      document.getElementById('settings-modal')?.classList.contains('active') ||
+                      document.getElementById('confirm-modal')?.classList.contains('active');
 
     // Cmd+K / Ctrl+K — toggle palette (works from anywhere, including inputs)
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {

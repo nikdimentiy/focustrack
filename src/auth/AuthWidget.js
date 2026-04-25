@@ -6,6 +6,7 @@ import { clearAll } from '../services/storage.js';
 import { timerStore } from '../store/timerStore.js';
 import { trackerStore } from '../store/trackerStore.js';
 import { resetTimer } from '../timer/timerEngine.js';
+import { showConfirm } from '../shared/ConfirmModal.js';
 
 export const AuthWidget = {
   _el: null,
@@ -142,7 +143,12 @@ export const AuthWidget = {
   },
 
   async _wipeLocal() {
-    if (!confirm('WIPE ALL LOCAL CACHE?\n\nClears all locally stored sessions, topics, and timer state.\nCloud data is not affected.')) return;
+    const ok = await showConfirm({
+      title:        'Wipe local cache?',
+      body:         'Clears all locally stored sessions, topics, and timer state. Cloud data is not affected.',
+      confirmLabel: 'Wipe',
+    });
+    if (!ok) return;
     resetTimer();
     await clearAll();
     timerStore.set({ running: false, elapsedSeconds: 0, sessionStartedAt: null, task: '', intensity: 'Focus', sessions: [] });
@@ -152,7 +158,12 @@ export const AuthWidget = {
 
   async _purge() {
     if (!authState.isAuthed()) { alert('Session expired. Please sign out and sign in again.'); return; }
-    if (!confirm('PURGE ALL CLOUD DATA?\n\nPermanently deletes all sessions and timer state.\n\nCannot be undone.')) return;
+    const ok = await showConfirm({
+      title:        'Purge all cloud data?',
+      body:         'Permanently deletes all sessions and timer state. This cannot be undone.',
+      confirmLabel: 'Purge',
+    });
+    if (!ok) return;
     const btn = this._el.querySelector('#btnPurge');
     btn.disabled = true;
     btn.innerHTML = "<i class='fas fa-spinner fa-spin' style='font-size:.6rem;margin-right:4px'></i>purging...";

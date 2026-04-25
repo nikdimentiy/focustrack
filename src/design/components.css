@@ -538,11 +538,30 @@ select.form-control option { background: #050810; color: var(--text-main); }
 .modal-buttons .btn-secondary:hover { background: rgba(255,45,120,0.13); }
 .modal-buttons .btn-primary   { background: rgba(0,245,255,0.08); border-color: rgba(0,245,255,0.3); color: var(--neon-cyan); }
 .modal-buttons .btn-primary:hover { background: rgba(0,245,255,0.15); box-shadow: 0 0 16px rgba(0,245,255,0.2); }
+.modal-buttons .btn-ghost  { background: transparent; border-color: rgba(200,230,240,0.15); color: var(--text-dim); }
+.modal-buttons .btn-ghost:hover  { background: rgba(200,230,240,0.05); border-color: rgba(200,230,240,0.28); }
+.modal-buttons .btn-danger { background: rgba(255,45,120,0.08); border-color: rgba(255,45,120,0.4); color: var(--neon-pink); }
+.modal-buttons .btn-danger:hover { background: rgba(255,45,120,0.18); box-shadow: 0 0 16px rgba(255,45,120,0.25); }
+.modal-icon.danger { background: rgba(255,45,120,0.07); border-color: rgba(255,45,120,0.25); box-shadow: 0 0 20px rgba(255,45,120,0.15); }
+.modal-icon.danger svg { color: var(--neon-pink); }
+
+/* ── Confirm Modal ── */
+#confirm-modal { display: none; position: fixed; z-index: 21000; inset: 0; background: rgba(5,8,16,0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; opacity: 0; transition: opacity .3s ease; }
+#confirm-modal.active { display: flex; opacity: 1; }
+#confirm-modal.active .modal-content { transform: scale(1) translateY(0); }
+#confirm-modal #confirm-body { font-family: var(--font-hud); font-size: .85rem; color: var(--text-dim); text-align: center; line-height: 1.6; margin: 0 0 20px; position: relative; z-index: 1; }
 
 /* ── Session Edit Modal ── */
 #session-edit-modal { display: none; position: fixed; z-index: 20000; inset: 0; background: rgba(5,8,16,0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; opacity: 0; transition: opacity .3s ease; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
 #session-edit-modal.active { display: flex; opacity: 1; }
 #session-edit-modal.active .modal-content { transform: scale(1) translateY(0); }
+
+/* ── Session Edit Diff Summary ── */
+#session-edit-diff { display: none; margin: 0 0 12px; padding: 7px 11px; border-radius: 4px; font-family: var(--font-mono); font-size: .68rem; line-height: 1.6; border: 1px solid transparent; }
+#session-edit-diff.has-changes { display: block; background: rgba(255,215,0,0.04); border-color: rgba(255,215,0,0.18); }
+#session-edit-diff .diff-label { color: rgba(255,215,0,0.55); text-transform: uppercase; font-size: .6rem; letter-spacing: .05em; margin-right: 4px; }
+#session-edit-diff .diff-item { color: var(--neon-cyan); }
+#session-edit-diff .diff-sep { color: var(--text-dim); }
 
 /* ── Session list edit button ── */
 #dw-view .session-row-end { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }

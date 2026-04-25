@@ -8,6 +8,8 @@ import { settings } from '../shared/settings.js';
 
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+let _editOriginal = null;
+
 const _MODE_CFG = {
   pomodoro: { label: 'Pomodoro', dur: '25 min', break: 'Take a 5-minute break!' },
   deepwork: { label: 'Deep Work', dur: '90 min', break: 'Take a well-earned break.' },
@@ -541,7 +543,52 @@ function _openSessionEditModal(session) {
   document.getElementById('session-edit-minutes').value   = session.minutes;
   document.getElementById('session-edit-intensity').value = session.intensity;
   document.getElementById('session-edit-tags').value      = (session.tags ?? []).join(', ');
+  _editOriginal = {
+    task:      session.task,
+    minutes:   session.minutes,
+    intensity: session.intensity,
+    tags:      (session.tags ?? []).join(', '),
+  };
+  _updateSessionDiff();
   modal.classList.add('active');
+}
+
+function _updateSessionDiff() {
+  const diffEl = document.getElementById('session-edit-diff');
+  if (!diffEl || !_editOriginal) return;
+
+  const task      = (document.getElementById('session-edit-task')?.value || '').trim() || 'Untitled Flow';
+  const minutes   = Math.max(1, parseInt(document.getElementById('session-edit-minutes')?.value, 10) || 1);
+  const intensity = document.getElementById('session-edit-intensity')?.value || '';
+  const tags      = (document.getElementById('session-edit-tags')?.value || '').trim();
+
+  const changes = [];
+  if (minutes !== _editOriginal.minutes)       changes.push(`${_editOriginal.minutes} min → ${minutes} min`);
+  if (task !== _editOriginal.task)             changes.push(`"${_editOriginal.task}" → "${task}"`);
+  if (intensity !== _editOriginal.intensity)   changes.push(`${_editOriginal.intensity} → ${intensity}`);
+  if (tags !== _editOriginal.tags.trim())      changes.push('tags updated');
+
+  diffEl.textContent = '';
+  diffEl.classList.remove('has-changes');
+  if (changes.length === 0) return;
+
+  diffEl.classList.add('has-changes');
+  const label = document.createElement('span');
+  label.className = 'diff-label';
+  label.textContent = 'Changes: ';
+  diffEl.appendChild(label);
+  changes.forEach((c, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'diff-sep';
+      sep.textContent = ' · ';
+      diffEl.appendChild(sep);
+    }
+    const item = document.createElement('span');
+    item.className = 'diff-item';
+    item.textContent = c;
+    diffEl.appendChild(item);
+  });
 }
 
 function mountSessionEditModal() {
@@ -553,6 +600,10 @@ function mountSessionEditModal() {
   const close = () => { modal.classList.remove('active'); setTimeout(() => form.reset(), 300); };
   cancelBtn.addEventListener('click', close);
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+  ['session-edit-task', 'session-edit-minutes', 'session-edit-intensity', 'session-edit-tags'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', _updateSessionDiff);
+  });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
