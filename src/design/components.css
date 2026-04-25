@@ -380,6 +380,19 @@ textarea.form-control { resize: vertical; min-height: 72px; line-height: 1.5; pa
 /* ── Analytics View ── */
 #an-view { padding-bottom: 60px; }
 
+/* Hero header */
+.an-hero { display: flex; align-items: center; gap: 18px; padding: 6px 4px 18px; }
+.an-hero-icon { width: 56px; height: 56px; flex-shrink: 0; background: rgba(0,245,255,0.06); border: 1px solid rgba(0,245,255,0.18); border-top: 1px solid rgba(0,245,255,0.5); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--neon-cyan); box-shadow: 0 0 24px rgba(0,245,255,0.12), inset 0 1px 0 rgba(0,245,255,0.12); animation: logo-pulse 3s ease-in-out infinite; }
+.an-hero-icon svg { width: 28px; height: 28px; filter: drop-shadow(0 0 5px rgba(0,245,255,0.7)); }
+.an-hero-text { flex: 1; min-width: 0; }
+.an-hero-eyebrow { font-family: var(--font-mono); font-size: .55rem; letter-spacing: .2em; color: rgba(0,245,255,0.5); text-transform: uppercase; margin-bottom: 4px; }
+.an-hero-title { font-family: var(--font-title); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-main); line-height: 1.1; }
+.an-hero-title span { color: var(--neon-cyan); text-shadow: 0 0 20px rgba(0,245,255,0.45); }
+.an-hero-sub { font-family: var(--font-mono); font-size: .58rem; color: var(--text-dim); letter-spacing: .06em; margin-top: 5px; }
+.an-hero-live { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(57,255,20,0.2); background: rgba(57,255,20,0.04); font-family: var(--font-mono); font-size: .55rem; color: var(--neon-green); text-transform: uppercase; letter-spacing: .12em; flex-shrink: 0; }
+.an-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation: pulse-dw 1.4s infinite; }
+@media (max-width: 480px) { .an-hero-live { display: none; } }
+
 /* Status badge reuse in analytics */
 #an-view .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-family: var(--font-mono); font-size: .6rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; border: 1px solid; }
 #an-view .status-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }

@@ -17,15 +17,24 @@ export function mountAnalyticsView(container) {
       <div class="panel">
         <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
         <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-        <div class="app-header">
-          <div class="logo">
-            <div class="logo-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              </svg>
-            </div>
-            <h1>Analytics <span>Dashboard</span></h1>
+        <div class="an-hero">
+          <div class="an-hero-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2"  y="18" width="5" height="12" rx="1" fill="currentColor" opacity="0.5"/>
+              <rect x="9"  y="10" width="5" height="20" rx="1" fill="currentColor" opacity="0.75"/>
+              <rect x="16" y="4"  width="5" height="26" rx="1" fill="currentColor"/>
+              <rect x="23" y="14" width="5" height="16" rx="1" fill="currentColor" opacity="0.65"/>
+            </svg>
           </div>
-          <p class="subtitle">// Deep work insights and learning progress</p>
+          <div class="an-hero-text">
+            <div class="an-hero-eyebrow">// analytics</div>
+            <h1 class="an-hero-title">Focus <span>Metrics</span></h1>
+            <p class="an-hero-sub">Deep work insights · Adaptive learning intelligence</p>
+          </div>
+          <div class="an-hero-live">
+            <div class="an-live-dot"></div>
+            <span>live data</span>
+          </div>
         </div>
       </div>
       <div id="an-kpis" class="an-kpi-row"></div>
