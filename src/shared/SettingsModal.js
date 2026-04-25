@@ -1,5 +1,10 @@
 import { settings } from './settings.js';
 import { requestNotifyPermission } from '../services/notifications.js';
+import {
+  isPeriodicSyncSupported,
+  registerBackgroundSync,
+  unregisterBackgroundSync,
+} from '../services/pushService.js';
 
 const _gearSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
   <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -55,6 +60,14 @@ export function mountSettingsButton(container) {
         </label>
       </div>
       <div class="settings-hint" id="notify-hint"></div>
+      <div class="settings-row" id="push-row" style="display:none">
+        <label class="settings-lbl" for="setting-push-enabled">Background notifications</label>
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-push-enabled">
+          <span class="settings-toggle-track"></span>
+        </label>
+      </div>
+      <div class="settings-hint" id="push-hint"></div>
     </div>`;
   document.body.appendChild(modal);
 
@@ -63,7 +76,11 @@ export function mountSettingsButton(container) {
     document.getElementById('setting-daily-goal').value       = s.dailyGoalMins;
     document.getElementById('setting-weekly-goal').value      = s.weeklyGoalMins;
     document.getElementById('setting-notify-reviews').checked = s.notifyReviews;
+    document.getElementById('setting-push-enabled').checked   = s.pushEnabled;
+    // Show background-notifications row only on supported browsers
+    document.getElementById('push-row').style.display = isPeriodicSyncSupported() ? '' : 'none';
     _updateNotifyHint();
+    _updatePushHint();
   };
 
   const _updateNotifyHint = () => {
@@ -79,6 +96,25 @@ export function mountSettingsButton(container) {
     else hint.textContent = '';
   };
 
+  const _updatePushHint = () => {
+    const hint = document.getElementById('push-hint');
+    if (!hint) return;
+    const s = settings.get();
+    if (!isPeriodicSyncSupported()) {
+      hint.textContent = '';
+      return;
+    }
+    if (!s.pushEnabled) {
+      hint.textContent = 'Notify you of overdue reviews even when the app is closed';
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      hint.textContent = 'Grant notification permission first';
+      return;
+    }
+    hint.textContent = 'Active — browser will check for reviews in the background';
+  };
+
   const open  = () => { _syncInputs(); modal.classList.add('active'); };
   const close = () => modal.classList.remove('active');
 
@@ -92,9 +128,33 @@ export function mountSettingsButton(container) {
   modal.querySelector('#setting-weekly-goal').addEventListener('change', e => {
     settings.set({ weeklyGoalMins: Math.max(30, Math.min(3000, Number(e.target.value) || 300)) });
   });
-  modal.querySelector('#setting-notify-reviews').addEventListener('change', e => {
+  modal.querySelector('#setting-notify-reviews').addEventListener('change', async e => {
     settings.set({ notifyReviews: e.target.checked });
-    if (e.target.checked) requestNotifyPermission();
+    if (e.target.checked) await requestNotifyPermission();
     _updateNotifyHint();
+    _updatePushHint();
+  });
+
+  modal.querySelector('#setting-push-enabled').addEventListener('change', async e => {
+    if (e.target.checked) {
+      const perm = await requestNotifyPermission();
+      if (perm !== 'granted') {
+        e.target.checked = false;
+        _updateNotifyHint();
+        _updatePushHint();
+        return;
+      }
+      const result = await registerBackgroundSync();
+      settings.set({ pushEnabled: result.ok });
+      e.target.checked = result.ok;
+      if (!result.ok && result.reason === 'denied') {
+        document.getElementById('push-hint').textContent =
+          'Background sync permission denied by browser';
+      }
+    } else {
+      await unregisterBackgroundSync();
+      settings.set({ pushEnabled: false });
+    }
+    _updatePushHint();
   });
 }

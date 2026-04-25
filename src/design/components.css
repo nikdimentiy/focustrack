@@ -316,8 +316,10 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .task-name     { font-family: var(--font-title); font-size: clamp(16px, 2.2vw, 24px); font-weight: 700; letter-spacing: 1px; color: var(--text-main); line-height: 1.25; }
 #dw-view .task-name em  { font-style: normal; color: var(--neon-cyan); text-shadow: 0 0 12px rgba(0,245,255,0.5); }
 #dw-view .setup-row     { display: grid; grid-template-columns: 1fr 150px; gap: 10px; }
+#dw-view .tag-row       { grid-template-columns: 1fr; margin-top: 2px; }
 #dw-view .field         { display: grid; gap: 5px; }
 #dw-view .field label   { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .15em; text-transform: uppercase; color: var(--text-dim); }
+#dw-view .field-kicker  { text-transform: none; letter-spacing: .04em; opacity: .45; font-size: .9em; margin-left: 4px; }
 #dw-view .field input, #dw-view .field select { height: 38px; border-radius: 6px; border: 1px solid var(--border-dim); background: rgba(0,245,255,0.03); color: var(--text-main); padding: 0 12px; font-family: var(--font-hud); font-size: .95rem; font-weight: 500; outline: none; transition: border-color 120ms, box-shadow 120ms; width: 100%; }
 #dw-view .field input:focus, #dw-view .field select:focus { border-color: rgba(0,245,255,0.4); box-shadow: 0 0 10px rgba(0,245,255,0.12); }
 #dw-view .field input::placeholder { color: rgba(200,230,240,0.22); }
@@ -391,6 +393,8 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .session-task { font-size: .9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #dw-view .session-dur  { font-family: var(--font-mono); font-size: .85rem; color: var(--neon-green); text-shadow: 0 0 8px rgba(57,255,20,0.4); flex-shrink: 0; }
 #dw-view .session-meta { font-family: var(--font-mono); font-size: .6rem; color: var(--text-dim); }
+#dw-view .session-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.session-tag           { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 10px; font-size: .63rem; background: rgba(0,245,255,0.07); color: rgba(0,245,255,0.75); border: 1px solid rgba(0,245,255,0.16); font-family: var(--font-mono); letter-spacing: .03em; line-height: 1.7; white-space: nowrap; }
 #dw-view .empty-msg    { padding: 22px; background: var(--bg-glass); border: 1px dashed rgba(0,245,255,0.18); border-radius: 8px; text-align: center; font-family: var(--font-mono); font-size: .68rem; color: var(--text-dim); letter-spacing: .08em; }
 
 @media (max-width: 860px) {
@@ -677,6 +681,7 @@ textarea.form-control { resize: vertical; min-height: 72px; line-height: 1.5; pa
 .an-hbar-ultra{ background: linear-gradient(90deg, var(--neon-pink),      rgba(255,45,120,0.15)); }
 .an-hbar-dow  { background: linear-gradient(90deg, var(--neon-purple),    rgba(157,0,255,0.15));  }
 .an-hbar-task { background: linear-gradient(90deg, var(--neon-gold),      rgba(255,215,0,0.15));  }
+.an-hbar-tag  { background: linear-gradient(90deg, var(--neon-cyan),      rgba(0,245,255,0.12));  }
 
 /* Learning mini-KPIs */
 .an-learn-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }

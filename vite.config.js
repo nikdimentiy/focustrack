@@ -7,10 +7,13 @@ export default defineConfig({
   build: { outDir: 'dist' },
   plugins: [
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       manifest: false,
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png}'],
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,woff2}'],
       },
     }),
   ],

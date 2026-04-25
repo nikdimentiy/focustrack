@@ -21,6 +21,7 @@ import { mountTrackerView } from './tracker/TrackerView.js';
 import { mountAnalyticsView } from './analytics/AnalyticsView.js';
 import { checkReviewReminders } from './services/notifications.js';
 import { settings } from './shared/settings.js';
+import { registerBackgroundSync } from './services/pushService.js';
 import { exportTopics, exportSessionsCSV, exportFullBackup } from './tracker/trackerEngine.js';
 import { CommandPalette } from './shared/CommandPalette.js';
 
@@ -112,6 +113,10 @@ async function boot() {
   setTimeout(() => {
     const s = settings.get();
     checkReviewReminders(trackerStore.get(), s.notifyReviews);
+    // Re-register periodic sync in case the SW was updated and lost the registration
+    if (s.pushEnabled && 'Notification' in window && Notification.permission === 'granted') {
+      registerBackgroundSync();
+    }
   }, 3000);
 
   // Re-check reminders when tracker data changes (e.g. after sync)

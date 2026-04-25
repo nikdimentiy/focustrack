@@ -49,6 +49,7 @@ export function mountAnalyticsView(container) {
         <div id="an-dow" class="an-section an-half"></div>
       </div>
       <div id="an-tasks" class="an-section"></div>
+      <div id="an-tags" class="an-section"></div>
       <div id="an-learning" class="an-section"></div>
     </div>`;
 
@@ -79,6 +80,7 @@ export function mountAnalyticsView(container) {
     _renderIntensity(sessions);
     _renderDow(sessions);
     _renderTopTasks(sessions);
+    _renderTagBreakdown(sessions);
     _renderLearning(topics);
   }
 
@@ -91,7 +93,7 @@ export function mountAnalyticsView(container) {
   const _t0 = trackerStore.get();
   _renderControls(_chartRange);
   _renderKPIs(_s0); _renderDailyChart(_s0, _chartRange); _renderIntensity(_s0);
-  _renderDow(_s0);  _renderTopTasks(_s0);                _renderLearning(_t0);
+  _renderDow(_s0);  _renderTopTasks(_s0); _renderTagBreakdown(_s0); _renderLearning(_t0);
 }
 
 function _renderControls(range) {
@@ -338,6 +340,41 @@ function _renderTopTasks(sessions) {
         </div>`;
       }).join('')}
     </div>` : '<div class="an-empty">No sessions recorded yet.</div>'}`;
+}
+
+function _renderTagBreakdown(sessions) {
+  const el = document.getElementById('an-tags');
+  if (!el) return;
+
+  // Build per-tag totals — a session contributes its minutes to every one of its tags
+  const mins   = {};
+  const counts = {};
+  sessions.forEach(s => {
+    if (!s.tags?.length) return;
+    s.tags.forEach(tag => {
+      mins[tag]   = (mins[tag]   || 0) + s.minutes;
+      counts[tag] = (counts[tag] || 0) + 1;
+    });
+  });
+
+  const sorted = Object.entries(mins).sort((a, b) => b[1] - a[1]);
+
+  if (!sorted.length) { el.innerHTML = ''; return; }
+
+  const maxMin = sorted[0][1];
+  el.innerHTML = `
+    <div class="an-section-title">// By Tag</div>
+    <div class="an-hbar-list">
+      ${sorted.map(([tag, min]) => {
+        const pct = Math.round((min / maxMin) * 100);
+        const n   = counts[tag];
+        return `<div class="an-hbar-row">
+          <div class="an-hbar-lbl"><span class="session-tag">${_esc(tag)}</span></div>
+          <div class="an-hbar-track"><div class="an-hbar-fill an-hbar-tag" style="width:${pct}%"></div></div>
+          <div class="an-hbar-val">${(min / 60).toFixed(1)}h <span class="an-dim">(${n})</span></div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function _renderLearning(topics) {

@@ -1,5 +1,5 @@
 import { timerStore } from '../store/timerStore.js';
-import { startTimer, stopTimer, pauseTimer, resetTimer, setTask, setIntensity, setTimerMode, updateSession, onSessionComplete, onBreakStart, getTarget, ARC_FULL, setAutoBreak, setPomodoroWorkMins, setPomodoroBreakMins, setTickSound } from './timerEngine.js';
+import { startTimer, stopTimer, pauseTimer, resetTimer, setTask, setIntensity, setTags, setTimerMode, updateSession, onSessionComplete, onBreakStart, getTarget, ARC_FULL, setAutoBreak, setPomodoroWorkMins, setPomodoroBreakMins, setTickSound } from './timerEngine.js';
 import { onSyncStatus } from '../services/syncEngine.js';
 import { unlockAudio, requestNotifyPermission } from '../services/notifications.js';
 import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart, parseLocalDate } from '../shared/utils.js';
@@ -41,6 +41,13 @@ export function mountTimerView(container) {
                   <option value="Focus" selected>🔥 Focus</option>
                   <option value="Ultra">⚡ Ultra</option>
                 </select>
+              </div>
+            </div>
+            <div class="setup-row tag-row">
+              <div class="field task-field">
+                <label for="tagInput">Tags <span class="field-kicker">comma-separated</span></label>
+                <input id="tagInput" type="text" placeholder="e.g. Reading, Study, Personal" autocomplete="off" />
+                <div id="recentTagsDrop" class="recent-tasks-drop"></div>
               </div>
             </div>
             <div class="mode-row" id="modeRow">
@@ -295,6 +302,44 @@ export function mountTimerView(container) {
   });
   taskInput.addEventListener('blur', () => setTimeout(() => taskDrop.classList.remove('open'), 150));
 
+  // ── Tag input ──────────────────────────────────────────────────────────────
+  const tagInput = container.querySelector('#tagInput');
+  const tagDrop  = container.querySelector('#recentTagsDrop');
+
+  const _parseTags = str => str.split(',').map(t => t.trim()).filter(Boolean);
+
+  tagInput.addEventListener('input', e => setTags(_parseTags(e.target.value)));
+
+  tagInput.addEventListener('focus', () => {
+    const sessions = timerStore.get().sessions;
+    const freq = {};
+    sessions.forEach(s => (s.tags ?? []).forEach(t => { freq[t] = (freq[t] || 0) + 1; }));
+    const allTags = Object.entries(freq).sort((a, b) => b[1] - a[1]).map(([t]) => t);
+    if (!allTags.length) return;
+    tagDrop.innerHTML = allTags.map(t => `<button class="recent-task-item" type="button">${_esc(t)}</button>`).join('');
+    tagDrop.classList.add('open');
+    tagDrop.querySelectorAll('.recent-task-item').forEach(btn => {
+      btn.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const existing = _parseTags(tagInput.value);
+        const clicked  = btn.textContent;
+        if (!existing.includes(clicked)) {
+          const updated = [...existing, clicked];
+          tagInput.value = updated.join(', ');
+          setTags(updated);
+        }
+        tagDrop.classList.remove('open');
+      });
+    });
+  });
+
+  tagInput.addEventListener('blur', () => {
+    setTimeout(() => tagDrop.classList.remove('open'), 150);
+    const tags = _parseTags(tagInput.value);
+    tagInput.value = tags.join(', ');
+    setTags(tags);
+  });
+
   container.querySelectorAll('.range-toggle button').forEach(btn =>
     btn.addEventListener('click', () => {
       container.querySelectorAll('.range-toggle button').forEach(b => b.classList.toggle('active', b === btn));
@@ -379,6 +424,7 @@ export function mountTimerView(container) {
   const s = timerStore.get();
   taskInput.value  = s.task;
   intensity.value  = s.intensity;
+  tagInput.value   = (s.tags ?? []).join(', ');
   customMinutes.value = Math.round((s.customTarget || 3600) / 60);
   pomoWorkMins.value  = s.pomodoroWorkMins || 25;
   pomoBreakMins.value = s.pomodoroBreakMins || 5;
@@ -476,6 +522,7 @@ function _renderSessions(sessions) {
         </div>
       </div>
       <div class="session-meta">${s.intensity} · ${readableDate(s.date)} · ${new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      ${s.tags?.length ? `<div class="session-tags">${s.tags.map(t => `<span class="session-tag">${_esc(t)}</span>`).join('')}</div>` : ''}
     </li>`).join('');
 
   list.querySelectorAll('.session-edit-btn').forEach(btn => {
@@ -493,6 +540,7 @@ function _openSessionEditModal(session) {
   document.getElementById('session-edit-task').value      = session.task;
   document.getElementById('session-edit-minutes').value   = session.minutes;
   document.getElementById('session-edit-intensity').value = session.intensity;
+  document.getElementById('session-edit-tags').value      = (session.tags ?? []).join(', ');
   modal.classList.add('active');
 }
 
@@ -512,7 +560,9 @@ function mountSessionEditModal() {
     const task      = document.getElementById('session-edit-task').value.trim() || 'Untitled Flow';
     const minutes   = Math.max(1, parseInt(document.getElementById('session-edit-minutes').value, 10));
     const intensity = document.getElementById('session-edit-intensity').value;
-    updateSession(ts, { task, minutes, intensity });
+    const tags      = (document.getElementById('session-edit-tags').value || '')
+      .split(',').map(t => t.trim()).filter(Boolean);
+    updateSession(ts, { task, minutes, intensity, tags });
     toast.show('Session updated', 'success');
     close();
   });

@@ -2,6 +2,7 @@ const DEFAULTS = {
   dailyGoalMins:  90,
   weeklyGoalMins: 300,
   notifyReviews:  true,
+  pushEnabled:    false,
 };
 
 const _KEY = 'focustrack-settings';

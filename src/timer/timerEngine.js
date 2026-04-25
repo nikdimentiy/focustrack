@@ -26,7 +26,7 @@ function persist() {
   saveTimerState({
     running: s.running, paused: s.paused,
     elapsedSeconds: s.elapsedSeconds, sessionStartedAt: s.sessionStartedAt,
-    task: s.task, intensity: s.intensity,
+    task: s.task, intensity: s.intensity, tags: s.tags ?? [],
     timerMode: s.timerMode, customTarget: s.customTarget,
     pomodoroPhase: s.pomodoroPhase, pomodoroWorkMins: s.pomodoroWorkMins,
     pomodoroBreakMins: s.pomodoroBreakMins, autoBreak: s.autoBreak, tickSound: s.tickSound,
@@ -38,6 +38,7 @@ function persist() {
 function _buildSession(s) {
   return {
     task: s.task.trim() || 'Untitled Flow', intensity: s.intensity,
+    tags: s.tags?.length ? [...s.tags] : [],
     minutes: Math.max(1, Math.floor(s.elapsedSeconds / 60)),
     date: fmtDate(new Date()), timestamp: new Date().toISOString(),
     startedAt: s.sessionStartedAt ? new Date(s.sessionStartedAt).toISOString() : null,
@@ -134,6 +135,7 @@ export function resetTimer() {
 
 export function setTask(task)           { timerStore.set({ task });            persist(); }
 export function setIntensity(intensity) { timerStore.set({ intensity });       persist(); }
+export function setTags(tags)           { timerStore.set({ tags });            persist(); }
 
 export function setTimerMode(mode, customTarget) {
   const patch = { timerMode: mode, pomodoroPhase: 'work' };
@@ -171,6 +173,7 @@ export function restoreTimer(savedState, savedSessions) {
   if (!savedState) return;
   const patch = {
     task: savedState.task || '', intensity: savedState.intensity || 'Focus',
+    tags: savedState.tags || [],
     timerMode: savedState.timerMode || 'deepwork',
     customTarget: savedState.customTarget || 3600,
     pomodoroPhase: savedState.pomodoroPhase || 'work',

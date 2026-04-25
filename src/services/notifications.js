@@ -57,10 +57,10 @@ export function tickBeep() {
   } catch {}
 }
 
-export function requestNotifyPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
+export async function requestNotifyPermission() {
+  if (!('Notification' in window)) return 'unsupported';
+  if (Notification.permission !== 'default') return Notification.permission;
+  return Notification.requestPermission();
 }
 
 export function sendNotification(title, body) {

@@ -5,6 +5,7 @@ let _state = {
   sessionStartedAt: null,
   task: '',
   intensity: 'Focus',
+  tags: [],
   timerMode: 'deepwork',
   customTarget: 3600,
   sessions: [],
