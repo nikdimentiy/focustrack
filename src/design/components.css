@@ -1,25 +1,62 @@
 /* ── Auth Widget ── */
 .cloud-auth-widget {
-  position: fixed; top: 15px; left: 15px; z-index: 11000; width: 190px;
-  background: rgba(5,10,22,0.75); backdrop-filter: blur(18px) saturate(160%);
+  position: fixed; top: 15px; left: 15px; z-index: 11000;
+}
+
+/* Compact icon button */
+.caw-icon-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(5,8,20,0.82); backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgba(0,245,255,0.18); border-top: 1px solid rgba(0,245,255,0.45);
+  color: var(--neon-cyan); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .25s ease; box-shadow: 0 0 18px rgba(0,245,255,0.08);
+  position: relative;
+}
+.caw-icon-btn:hover { background: rgba(0,245,255,0.09); border-color: rgba(0,245,255,0.45); box-shadow: 0 0 28px rgba(0,245,255,0.22); transform: scale(1.08); }
+.caw-cloud-icon { width: 22px; height: 22px; }
+.caw-status-dot {
+  position: absolute; bottom: 6px; right: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid rgba(5,8,20,0.9);
+}
+.caw-dot-online  { background: var(--neon-green); box-shadow: 0 0 5px rgba(57,255,20,0.8); }
+.caw-dot-offline { background: #44505e; }
+
+/* Dropdown panel */
+.caw-panel {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  width: 192px;
+  background: rgba(5,10,22,0.96); backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid rgba(0,245,255,0.18); border-top: 1px solid rgba(0,245,255,0.45);
-  border-radius: 6px; padding: 10px 12px 11px; transition: width .25s ease, opacity .2s;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 20px rgba(0,245,255,0.06);
+  animation: caw-drop .18s ease;
+  transform-origin: top left;
 }
+@keyframes caw-drop {
+  from { opacity: 0; transform: scale(.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)  translateY(0); }
+}
+.caw-panel-inner { padding: 10px 12px 11px; }
+
 @media (max-width: 599px) {
-  /* Move auth widget to bottom so it never overlaps the nav */
   .cloud-auth-widget {
     top: auto;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    left: 12px; right: 12px;
-    width: auto; max-width: none;
-    max-height: 60vh; overflow-y: auto;
-    padding: 10px 12px;
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    left: 12px;
   }
-  /* Larger touch targets for auth buttons on mobile */
+  .caw-panel {
+    top: auto; bottom: calc(100% + 8px);
+    transform-origin: bottom left;
+  }
+  @keyframes caw-drop {
+    from { opacity: 0; transform: scale(.95) translateY(4px); }
+    to   { opacity: 1; transform: scale(1)  translateY(0); }
+  }
   .caw-btn, .caw-signout, .caw-purge { min-height: 44px; }
 }
-.cloud-auth-widget:hover { background: rgba(5,10,22,0.9); }
 .caw-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .caw-dot    { width: 5px; height: 5px; border-radius: 50%; background: var(--neon-cyan); box-shadow: 0 0 6px rgba(0,245,255,0.8); flex-shrink: 0; }
 .caw-label  { font-family: var(--font-mono); font-size: .52rem; letter-spacing: .22em; color: rgba(0,245,255,0.55); text-transform: uppercase; }

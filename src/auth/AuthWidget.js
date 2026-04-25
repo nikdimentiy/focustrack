@@ -9,25 +9,62 @@ import { resetTimer } from '../timer/timerEngine.js';
 
 export const AuthWidget = {
   _el: null,
+  _open: false,
 
   mount(container) {
     this._el = container;
     this._render();
-    authState.subscribe(() => this._render());
+    authState.subscribe(() => {
+      // Close panel on auth state change, then re-render
+      this._open = false;
+      this._render();
+    });
+
+    // Close panel when clicking outside
+    document.addEventListener('click', e => {
+      if (!this._el.contains(e.target)) {
+        if (this._open) { this._open = false; this._updatePanel(); }
+      }
+    });
   },
 
   _render() {
     const authed = authState.isAuthed();
     const email  = authState.getEmail() ?? '';
+
     this._el.innerHTML = `
-      <div class="cloud-auth-widget">
-        <div class="caw-header">
-          <div class="caw-dot" id="cawDot" style="${authed ? 'background:var(--neon-green);box-shadow:0 0 6px rgba(57,255,20,0.8)' : ''}"></div>
-          <span class="caw-label">Cloud DB</span>
-          <span class="caw-status" style="${authed ? 'color:var(--neon-green)' : ''}">${authed ? 'online' : 'offline'}</span>
+      <div class="cloud-auth-widget caw-compact">
+        <button class="caw-icon-btn" id="cawToggle" title="${authed ? `Signed in: ${email}` : 'Sign in to sync'}">
+          <svg class="caw-cloud-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+              d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+          </svg>
+          <span class="caw-status-dot ${authed ? 'caw-dot-online' : 'caw-dot-offline'}"></span>
+        </button>
+        <div class="caw-panel" id="cawPanel" style="display:none">
+          <div class="caw-panel-inner">
+            <div class="caw-header">
+              <div class="caw-dot" style="${authed ? 'background:var(--neon-green);box-shadow:0 0 6px rgba(57,255,20,0.8)' : ''}"></div>
+              <span class="caw-label">Cloud DB</span>
+              <span class="caw-status" style="${authed ? 'color:var(--neon-green)' : ''}">${authed ? 'online' : 'offline'}</span>
+            </div>
+            ${authed ? this._userHTML(email) : this._guestHTML()}
+          </div>
         </div>
-        ${authed ? this._userHTML(email) : this._guestHTML()}
       </div>`;
+
+    // Toggle button
+    this._el.querySelector('#cawToggle').addEventListener('click', e => {
+      e.stopPropagation();
+      this._open = !this._open;
+      this._updatePanel();
+    });
+
+    // When not authed: show panel by default so user can log in
+    if (!authed && !this._open) {
+      this._open = true;
+    }
+    this._updatePanel();
 
     if (authed) {
       this._el.querySelector('#btnSync').addEventListener('click', () => doSync());
@@ -37,6 +74,12 @@ export const AuthWidget = {
       this._el.querySelector('#loginForm').addEventListener('submit', e => this._login(e));
     }
     this._el.querySelector('#btnWipeLocal').addEventListener('click', () => this._wipeLocal());
+  },
+
+  _updatePanel() {
+    const panel = this._el?.querySelector('#cawPanel');
+    if (!panel) return;
+    panel.style.display = this._open ? '' : 'none';
   },
 
   _guestHTML() {
