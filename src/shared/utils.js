@@ -5,10 +5,14 @@ export const fmtTime = s => {
   return `${h}:${m}:${sc}`;
 };
 
-export const fmtDate        = d => d.toISOString().slice(0, 10);
-export const fmtDateInput   = d => d.toISOString().split('T')[0];
-export const readableDate   = str => new Date(str + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-export const readableDateLong = str => new Date(str + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const _pad = n => String(n).padStart(2, '0');
+// Use local calendar date so sessions logged at 11pm don't shift to next day in UTC- zones
+export const fmtDate        = d => `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`;
+export const fmtDateInput   = fmtDate;
+// Parse YYYY-MM-DD as local midnight — avoids UTC shift from bare date strings
+export const parseLocalDate = str => { const [y, m, d] = str.split('-').map(Number); return new Date(y, m - 1, d); };
+export const readableDate     = str => parseLocalDate(str).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+export const readableDateLong = str => parseLocalDate(str).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
 export const weekStart = (d = new Date()) => {
   const c = new Date(d);
@@ -33,7 +37,7 @@ export const calcMaxStreak = sessions => {
   if (!keys.length) return 0;
   let best = 1, cur = 1;
   for (let i = 1; i < keys.length; i++) {
-    const diff = Math.round((new Date(keys[i] + 'T00:00:00') - new Date(keys[i - 1] + 'T00:00:00')) / 86400000);
+    const diff = Math.round((parseLocalDate(keys[i]) - parseLocalDate(keys[i - 1])) / 86400000);
     if (diff === 1) { cur++; best = Math.max(best, cur); } else cur = 1;
   }
   return best;
@@ -49,8 +53,7 @@ export const heatDays = range => {
 
 export const calcStatus = nextRepeat => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const parts = nextRepeat.split('-');
-  const next = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(nextRepeat + 'T00:00:00');
+  const next = parseLocalDate(nextRepeat);
   if (next < today) return 'Overdue';
   if (next.getTime() === today.getTime()) return 'Today';
   return 'Pending';
@@ -74,11 +77,11 @@ export function computeNextRepeat(repeatKey, ease, quality, today) {
   const mult = { again: 0.3, hard: 0.7, good: 1.0, easy: 1.3 }[quality] ?? 1.0;
   const base = { repeat1: 3, repeat3: 7, repeat7: 14 }[repeatKey];
   if (base === undefined) {
-    const d = new Date(today + 'T00:00:00');
+    const d = parseLocalDate(today);
     d.setFullYear(d.getFullYear() + 1);
     return fmtDate(d);
   }
-  const d = new Date(today + 'T00:00:00');
+  const d = parseLocalDate(today);
   d.setDate(d.getDate() + Math.max(1, Math.round(base * ease * mult)));
   return fmtDate(d);
 }

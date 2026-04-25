@@ -24,6 +24,39 @@ export function beep() {
   } catch {}
 }
 
+export function completionChime() {
+  try {
+    const ctx = _audioCtx ?? new (window.AudioContext || window.webkitAudioContext)();
+    const t = ctx.currentTime;
+    [[523, 0], [659, 0.2], [784, 0.4]].forEach(([freq, offset]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + offset);
+      gain.gain.setValueAtTime(0.0, t + offset);
+      gain.gain.linearRampToValueAtTime(0.25, t + offset + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.45);
+      osc.start(t + offset); osc.stop(t + offset + 0.45);
+    });
+  } catch {}
+}
+
+export function tickBeep() {
+  try {
+    const ctx = _audioCtx ?? new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    const t = ctx.currentTime;
+    osc.frequency.setValueAtTime(1200, t);
+    gain.gain.setValueAtTime(0.035, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.018);
+    osc.start(t); osc.stop(t + 0.018);
+  } catch {}
+}
+
 export function requestNotifyPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
@@ -31,7 +64,7 @@ export function requestNotifyPermission() {
 }
 
 export function sendNotification(title, body) {
-  beep();
+  completionChime();
   if ('Notification' in window && Notification.permission === 'granted') {
     try { new Notification(title, { body, icon: '/icons/android-chrome-192x192.png', silent: true }); } catch {}
   }

@@ -8,10 +8,11 @@ import { clearAll } from '../services/storage.js';
 import { calcProgress, readableDateLong } from '../shared/utils.js';
 
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-let _activeTag  = null;
-let _qpicker    = null;
-let _qpCallback = null;
-let _dragSrcIdx = -1;
+let _activeTag    = null;
+let _activeStatus = null;
+let _qpicker      = null;
+let _qpCallback   = null;
+let _dragSrcIdx   = -1;
 
 function _srStrength(ease) {
   const e = ease ?? 2.5;
@@ -156,6 +157,13 @@ export function mountTrackerView(container) {
             <input type="text" id="search-input" placeholder="Search topics...">
           </div>
         </div>
+        <div class="status-filter-row" id="status-filter-row">
+          <span class="sf-lbl">// filter</span>
+          <button class="sf-pill active" data-status="">All</button>
+          <button class="sf-pill sf-today" data-status="Today">Today</button>
+          <button class="sf-pill sf-overdue" data-status="Overdue">Overdue</button>
+          <button class="sf-pill sf-pending" data-status="Pending">Pending</button>
+        </div>
         <div class="tag-filter-bar" id="tag-filter-bar" style="display:none"></div>
         <table id="topics-table">
           <thead><tr>
@@ -174,8 +182,9 @@ export function mountTrackerView(container) {
       </div>
     </div>`;
 
-  document.getElementById('date-text').textContent =
-    new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const _now = new Date();
+  document.getElementById('date-text').innerHTML =
+    `${_now.toLocaleDateString(undefined, { weekday: 'long' })}, <span class="date-day">${_now.toLocaleDateString(undefined, { month: 'long' })} ${_now.getDate()}</span>, ${_now.getFullYear()}`;
 
   // Quality picker singleton
   if (!document.getElementById('quality-picker')) {
@@ -224,6 +233,15 @@ export function mountTrackerView(container) {
   });
   container.querySelector('#search-input').addEventListener('input', e => _renderTable(e.target.value));
 
+  container.querySelector('#status-filter-row').querySelectorAll('.sf-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      _activeStatus = pill.dataset.status || null;
+      container.querySelector('#status-filter-row').querySelectorAll('.sf-pill')
+        .forEach(p => p.classList.toggle('active', p === pill));
+      _renderTable(container.querySelector('#search-input')?.value || '');
+    });
+  });
+
   trackerStore.subscribe(() => _renderTable(container.querySelector('#search-input').value));
   _renderTable('');
 }
@@ -258,7 +276,8 @@ function _renderTable(search = '') {
   _renderTagBar(topics);
 
   const filtered = topics.filter(t =>
-    (!_activeTag || (t.tags || []).includes(_activeTag)) &&
+    (!_activeTag    || (t.tags || []).includes(_activeTag)) &&
+    (!_activeStatus || t.status === _activeStatus) &&
     t.topic.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -273,11 +292,13 @@ function _renderTable(search = '') {
   empty.style.display = 'none';
 
   if (!filtered.length) {
-    const msg = _activeTag && search
-      ? `No topics tagged "${_esc(_activeTag)}" matching "${_esc(search)}"`
-      : _activeTag
-        ? `No topics with tag "${_esc(_activeTag)}"`
-        : `No topics found matching "${_esc(search)}"`;
+    const msg = _activeStatus
+      ? `No ${_activeStatus.toLowerCase()} topics${search ? ` matching "${_esc(search)}"` : ''}${_activeTag ? ` tagged "${_esc(_activeTag)}"` : ''}`
+      : _activeTag && search
+        ? `No topics tagged "${_esc(_activeTag)}" matching "${_esc(search)}"`
+        : _activeTag
+          ? `No topics with tag "${_esc(_activeTag)}"`
+          : `No topics found matching "${_esc(search)}"`;
     body.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:3rem;color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em">${msg}</td></tr>`;
     if (cards) cards.innerHTML = '';
     _updateTrackerStats(topics);

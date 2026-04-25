@@ -1,8 +1,8 @@
 import { timerStore } from '../store/timerStore.js';
-import { startTimer, stopTimer, pauseTimer, resetTimer, setTask, setIntensity, setTimerMode, updateSession, onSessionComplete, getTarget, ARC_FULL } from './timerEngine.js';
+import { startTimer, stopTimer, pauseTimer, resetTimer, setTask, setIntensity, setTimerMode, updateSession, onSessionComplete, onBreakStart, getTarget, ARC_FULL, setAutoBreak, setPomodoroWorkMins, setPomodoroBreakMins, setTickSound } from './timerEngine.js';
 import { onSyncStatus } from '../services/syncEngine.js';
 import { unlockAudio, requestNotifyPermission } from '../services/notifications.js';
-import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart } from '../shared/utils.js';
+import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart, parseLocalDate } from '../shared/utils.js';
 import { toast } from '../shared/Toast.js';
 
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -47,7 +47,7 @@ export function mountTimerView(container) {
             <div class="mode-row" id="modeRow">
               <button class="mode-btn" data-mode="pomodoro">
                 <span class="mode-name">Pomodoro</span>
-                <span class="mode-dur">25 min</span>
+                <span class="mode-dur" id="pomodoroDurLabel">25 min</span>
               </button>
               <button class="mode-btn active" data-mode="deepwork">
                 <span class="mode-name">Deep Work</span>
@@ -57,6 +57,22 @@ export function mountTimerView(container) {
                 <span class="mode-name">Custom</span>
                 <span class="mode-dur" id="customDurLabel">60 min</span>
               </button>
+            </div>
+            <div class="pomo-config-row" id="pomoConfigRow" style="display:none">
+              <div class="pomo-presets">
+                <button class="pomo-preset" id="preset2505" data-work="25" data-break="5">25/5</button>
+                <button class="pomo-preset" id="preset5010" data-work="50" data-break="10">50/10</button>
+              </div>
+              <div class="pomo-inputs">
+                <span class="pomo-lbl">Work</span>
+                <input type="number" id="pomoWorkMins" min="5" max="120" value="25">
+                <span class="pomo-lbl">min · Break</span>
+                <input type="number" id="pomoBreakMins" min="1" max="30" value="5">
+                <span class="pomo-lbl">min</span>
+              </div>
+              <label class="pomo-auto-label">
+                <input type="checkbox" id="autoBreakToggle"> Auto-break
+              </label>
             </div>
             <div class="custom-minutes-row" id="customRow" style="display:none">
               <label for="customMinutes">Duration</label>
@@ -82,6 +98,7 @@ export function mountTimerView(container) {
                 <div class="timer-pct" id="timerPct">0%</div>
                 <div class="timer-digits" id="timerEl">00:00:00</div>
                 <div class="timer-sub" id="timerSub">elapsed</div>
+                <div class="phase-badge" id="phaseBadge"></div>
               </div>
             </div>
             <div class="btn-col">
@@ -91,6 +108,9 @@ export function mountTimerView(container) {
                 <button class="btn btn-stop"  id="stopBtn"><i class="fas fa-stop-circle"></i>&ensp;Stop</button>
               </div>
               <button class="btn btn-reset" id="resetBtn" style="display:none"><i class="fas fa-undo-alt"></i>&ensp;Reset</button>
+              <label class="tick-toggle-label">
+                <input type="checkbox" id="tickSoundToggle"> <span>🔊 Tick sound</span>
+              </label>
               <div id="dwCloudChip" class="dw-cloud-chip" style="display:none">
                 <span class="dw-cloud-dot" id="dwCloudDot"></span>
                 <span id="dwCloudLabel">cloud sync</span>
@@ -169,6 +189,7 @@ export function mountTimerView(container) {
   const timerEl        = container.querySelector('#timerEl');
   const timerPct       = container.querySelector('#timerPct');
   const timerSub       = container.querySelector('#timerSub');
+  const phaseBadge     = container.querySelector('#phaseBadge');
   const startBtn       = container.querySelector('#startBtn');
   const btnPair        = container.querySelector('#btnPair');
   const pauseResumeBtn = container.querySelector('#pauseResumeBtn');
@@ -181,6 +202,11 @@ export function mountTimerView(container) {
   const customRow      = container.querySelector('#customRow');
   const customMinutes  = container.querySelector('#customMinutes');
   const customDurLabel = container.querySelector('#customDurLabel');
+  const pomoConfigRow  = container.querySelector('#pomoConfigRow');
+  const pomoWorkMins   = container.querySelector('#pomoWorkMins');
+  const pomoBreakMins  = container.querySelector('#pomoBreakMins');
+  const autoBreakTgl   = container.querySelector('#autoBreakToggle');
+  const tickSoundTgl   = container.querySelector('#tickSoundToggle');
   const breakOverlay   = container.querySelector('#break-overlay');
 
   // ── Mode selector ──────────────────────────────────────────────────────────
@@ -198,6 +224,32 @@ export function mountTimerView(container) {
     customDurLabel.textContent = `${mins} min`;
     setTimerMode('custom', mins * 60);
   });
+
+  // ── Pomodoro config ────────────────────────────────────────────────────────
+  container.querySelector('#preset2505').addEventListener('click', () => {
+    pomoWorkMins.value = 25; pomoBreakMins.value = 5;
+    setPomodoroWorkMins(25); setPomodoroBreakMins(5);
+    _syncPomoPresets(container, 25, 5);
+  });
+  container.querySelector('#preset5010').addEventListener('click', () => {
+    pomoWorkMins.value = 50; pomoBreakMins.value = 10;
+    setPomodoroWorkMins(50); setPomodoroBreakMins(10);
+    _syncPomoPresets(container, 50, 10);
+  });
+  pomoWorkMins.addEventListener('change', () => {
+    const m = Math.max(5, Math.min(120, Number(pomoWorkMins.value) || 25));
+    pomoWorkMins.value = m;
+    setPomodoroWorkMins(m);
+    _syncPomoPresets(container, m, Number(pomoBreakMins.value));
+  });
+  pomoBreakMins.addEventListener('change', () => {
+    const m = Math.max(1, Math.min(30, Number(pomoBreakMins.value) || 5));
+    pomoBreakMins.value = m;
+    setPomodoroBreakMins(m);
+    _syncPomoPresets(container, Number(pomoWorkMins.value), m);
+  });
+  autoBreakTgl.addEventListener('change', () => setAutoBreak(autoBreakTgl.checked));
+  tickSoundTgl.addEventListener('change', () => setTickSound(tickSoundTgl.checked));
 
   // ── Timer buttons ──────────────────────────────────────────────────────────
   startBtn.addEventListener('click', () => {
@@ -253,9 +305,14 @@ export function mountTimerView(container) {
 
   // ── Break overlay ──────────────────────────────────────────────────────────
   const _showBreak = ({ mode, minutes, task }) => {
-    const cfg = _MODE_CFG[mode] ?? _MODE_CFG.custom;
-    document.getElementById('breakTitle').textContent  = `${cfg.label} complete!`;
-    document.getElementById('breakDetail').textContent = `${minutes} min · ${task || 'Untitled Flow'} — ${cfg.break}`;
+    if (mode === 'break-end') {
+      document.getElementById('breakTitle').textContent  = 'Break Complete!';
+      document.getElementById('breakDetail').textContent = `${minutes} min break done — ready to focus again?`;
+    } else {
+      const cfg = _MODE_CFG[mode] ?? _MODE_CFG.custom;
+      document.getElementById('breakTitle').textContent  = `${cfg.label} complete!`;
+      document.getElementById('breakDetail').textContent = `${minutes} min · ${task || 'Untitled Flow'} — ${cfg.break}`;
+    }
     breakOverlay.classList.add('active');
     const _autoClose = setTimeout(() => breakOverlay.classList.remove('active'), 30000);
     const _close = () => { clearTimeout(_autoClose); breakOverlay.classList.remove('active'); };
@@ -264,6 +321,9 @@ export function mountTimerView(container) {
   };
 
   onSessionComplete(_showBreak);
+  onBreakStart(({ breakMins }) => {
+    toast.show(`☕ Break started — ${breakMins} min. Rest up!`, 'success');
+  });
   breakOverlay.addEventListener('click', e => { if (e.target === breakOverlay) breakOverlay.classList.remove('active'); });
 
   // ── Sync state → UI ────────────────────────────────────────────────────────
@@ -275,14 +335,32 @@ export function mountTimerView(container) {
     pauseResumeBtn.innerHTML = s.running
       ? '<i class="fas fa-pause"></i>&ensp;Pause'
       : '▶&ensp;Resume';
-    timerSub.textContent = s.paused ? 'paused' : 'elapsed';
+
+    const isBreak = s.pomodoroPhase === 'break';
+    timerSub.textContent = s.paused ? (isBreak ? 'paused · break' : 'paused') : (isBreak ? 'break' : 'elapsed');
+    if (phaseBadge) phaseBadge.textContent = isBreak ? '☕ Break Mode' : '';
+
+    // Arc color reflects phase
+    arcFill.style.stroke = isBreak ? 'var(--neon-green)' : '';
+    arcFill.style.filter = isBreak ? 'drop-shadow(0 0 10px rgba(57,255,20,0.8))' : '';
+
     modeRow.querySelectorAll('.mode-btn').forEach(b => { b.disabled = active; });
     customMinutes.disabled = active;
-    // Mode buttons active state
+    pomoWorkMins.disabled  = active;
+    pomoBreakMins.disabled = active;
+
     modeRow.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === s.timerMode));
-    // Custom row visibility
-    customRow.style.display = s.timerMode === 'custom' ? '' : 'none';
+
+    customRow.style.display    = s.timerMode === 'custom'    ? '' : 'none';
+    pomoConfigRow.style.display = s.timerMode === 'pomodoro' ? '' : 'none';
     customDurLabel.textContent = `${Math.round((s.customTarget || 3600) / 60)} min`;
+
+    const pomodoroDurLabel = container.querySelector('#pomodoroDurLabel');
+    if (pomodoroDurLabel) pomodoroDurLabel.textContent = `${s.pomodoroWorkMins || 25} min`;
+
+    autoBreakTgl.checked = s.autoBreak;
+    tickSoundTgl.checked = s.tickSound;
+    _syncPomoPresets(container, s.pomodoroWorkMins || 25, s.pomodoroBreakMins || 5);
   };
 
   timerStore.subscribe(s => {
@@ -303,6 +381,8 @@ export function mountTimerView(container) {
   taskInput.value  = s.task;
   intensity.value  = s.intensity;
   customMinutes.value = Math.round((s.customTarget || 3600) / 60);
+  pomoWorkMins.value  = s.pomodoroWorkMins || 25;
+  pomoBreakMins.value = s.pomodoroBreakMins || 5;
   _updateTaskDisplay(taskDisp, s.task);
   syncBtns(s);
   timerEl.textContent = fmtTime(s.elapsedSeconds);
@@ -311,6 +391,11 @@ export function mountTimerView(container) {
   timerPct.textContent = Math.round(initPct * 100) + '%';
   arcFill.style.strokeDashoffset = ARC_FULL - ARC_FULL * initPct;
   _updateStats(s);
+}
+
+function _syncPomoPresets(container, workMins, breakMins) {
+  container.querySelector('#preset2505')?.classList.toggle('active', workMins === 25 && breakMins === 5);
+  container.querySelector('#preset5010')?.classList.toggle('active', workMins === 50 && breakMins === 10);
 }
 
 function _buildTicks() {
@@ -340,7 +425,7 @@ function _updateStats(s) {
   const todayMin  = todaySess.reduce((a, x) => a + x.minutes, 0);
   const bestBlock = todaySess.reduce((m, x) => Math.max(m, x.minutes), 0);
   const sw = weekStart();
-  const weeklySess = sessions.filter(x => new Date(x.date + 'T00:00:00') >= sw);
+  const weeklySess = sessions.filter(x => parseLocalDate(x.date) >= sw);
   const weeklyMin  = weeklySess.reduce((a, x) => a + x.minutes, 0);
   const pct = Math.min(weeklyMin / WEEKLY_TARGET * 100, 100);
   const allTime = sessions.reduce((m, x) => Math.max(m, x.minutes), 0);

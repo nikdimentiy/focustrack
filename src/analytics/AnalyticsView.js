@@ -1,7 +1,7 @@
 import { timerStore } from '../store/timerStore.js';
 import { trackerStore } from '../store/trackerStore.js';
 import { Nav } from '../shared/Nav.js';
-import { fmtDate, calcStreak, calcMaxStreak, weekStart, byDate, calcProgress, readableDateLong } from '../shared/utils.js';
+import { fmtDate, calcStreak, calcMaxStreak, weekStart, byDate, calcProgress, readableDateLong, parseLocalDate } from '../shared/utils.js';
 import { exportSessionsCSV, exportFullBackup } from '../tracker/trackerEngine.js';
 
 const _esc    = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -151,32 +151,65 @@ const _RANGE_TITLES = {
   'thisweek': '// This Week', 'lastweek': '// Last Week', 'thismonth': '// This Month',
 };
 
+function _isoWeekRange(weeksAgo) {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const dow = (now.getDay() + 6) % 7;
+  const monday = new Date(now); monday.setDate(now.getDate() - dow - weeksAgo * 7);
+  const end = new Date(monday); end.setDate(monday.getDate() + 7);
+  return { start: fmtDate(monday), end: fmtDate(end) };
+}
+
+function _deltaHtml(curr, prev) {
+  if (prev === 0 && curr === 0) return '';
+  if (prev === 0) return `<div class="an-kpi-delta an-kpi-delta-pos">↑ new data</div>`;
+  const pct = Math.round((curr - prev) / prev * 100);
+  const cls = pct > 0 ? 'an-kpi-delta-pos' : pct < 0 ? 'an-kpi-delta-neg' : 'an-kpi-delta-flat';
+  return `<div class="an-kpi-delta ${cls}">${pct > 0 ? '+' : ''}${pct}% vs last week</div>`;
+}
+
 function _renderKPIs(sessions) {
   const el = document.getElementById('an-kpis');
   if (!el) return;
   const totalMin = sessions.reduce((s, x) => s + x.minutes, 0);
-  const wsStr    = fmtDate(weekStart());
-  const weekMin  = sessions.filter(s => s.date >= wsStr).reduce((a, s) => a + s.minutes, 0);
-  const streak   = calcStreak(sessions);
-  const best     = calcMaxStreak(sessions);
-  const avgMin   = sessions.length ? Math.round(totalMin / sessions.length) : 0;
+
+  const { start: w0Start, end: w0End } = _isoWeekRange(0);
+  const { start: w1Start, end: w1End } = _isoWeekRange(1);
+  const thisWeekSess = sessions.filter(s => s.date >= w0Start && s.date < w0End);
+  const lastWeekSess = sessions.filter(s => s.date >= w1Start && s.date < w1End);
+  const weekMin      = thisWeekSess.reduce((a, s) => a + s.minutes, 0);
+  const lastWeekMin  = lastWeekSess.reduce((a, s) => a + s.minutes, 0);
+  const thisWeekAvg  = thisWeekSess.length ? Math.round(weekMin / thisWeekSess.length) : 0;
+  const lastWeekAvg  = lastWeekSess.length ? Math.round(lastWeekMin / lastWeekSess.length) : 0;
+
+  const streak = calcStreak(sessions);
+  const best   = calcMaxStreak(sessions);
+  const avgMin = sessions.length ? Math.round(totalMin / sessions.length) : 0;
+
+  const totalDiffMin = weekMin - lastWeekMin;
+  const totalDiffH   = (Math.abs(totalDiffMin) / 60).toFixed(1);
+  const totalDeltaHtml = (lastWeekMin === 0 && weekMin === 0) ? '' :
+    `<div class="an-kpi-delta ${totalDiffMin >= 0 ? 'an-kpi-delta-pos' : 'an-kpi-delta-neg'}">${totalDiffMin >= 0 ? '+' : '-'}${totalDiffH}h vs last week</div>`;
 
   el.innerHTML = `
     <div class="an-kpi-card an-kpi-cyan">
       <div class="an-kpi-val">${(totalMin / 60).toFixed(1)}<span class="an-kpi-unit">h</span></div>
       <div class="an-kpi-lbl">Total Focus Time</div>
+      ${totalDeltaHtml}
     </div>
     <div class="an-kpi-card an-kpi-gold">
       <div class="an-kpi-val">${(weekMin / 60).toFixed(1)}<span class="an-kpi-unit">h</span></div>
       <div class="an-kpi-lbl">This Week</div>
+      ${_deltaHtml(weekMin, lastWeekMin)}
     </div>
     <div class="an-kpi-card an-kpi-green">
       <div class="an-kpi-val">${streak}<span class="an-kpi-unit">d</span></div>
       <div class="an-kpi-lbl">Streak · Best ${best}d</div>
+      ${_deltaHtml(thisWeekSess.length, lastWeekSess.length)}
     </div>
     <div class="an-kpi-card an-kpi-purple">
       <div class="an-kpi-val">${avgMin}<span class="an-kpi-unit">m</span></div>
       <div class="an-kpi-lbl">Avg Session · ${sessions.length} total</div>
+      ${_deltaHtml(thisWeekAvg, lastWeekAvg)}
     </div>`;
 }
 
@@ -236,7 +269,7 @@ function _renderDow(sessions) {
   const LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const buckets = Array(7).fill(null).map(() => ({ total: 0, n: 0 }));
   sessions.forEach(s => {
-    const dow = new Date(s.date + 'T00:00:00').getDay();
+    const dow = parseLocalDate(s.date).getDay();
     const idx = ORDER.indexOf(dow);
     if (idx >= 0) { buckets[idx].total += s.minutes; buckets[idx].n++; }
   });

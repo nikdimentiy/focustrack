@@ -9,6 +9,11 @@ let _state = {
   customTarget: 3600,
   sessions: [],
   heatmapRange: '7days',
+  pomodoroPhase: 'work',
+  pomodoroWorkMins: 25,
+  pomodoroBreakMins: 5,
+  autoBreak: false,
+  tickSound: false,
 };
 
 const _subs = new Set();
