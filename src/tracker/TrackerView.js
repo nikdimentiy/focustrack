@@ -188,7 +188,7 @@ export function mountTrackerView(container) {
       <div class="table-container">
         <div class="table-header">
           <div class="table-title">
-            <span class="panel-label" style="font-size:.6rem;letter-spacing:.2em;margin-bottom:0;opacity:1">// topics</span>
+            <span class="panel-label" style="font-size:.6rem;letter-spacing:.2em;margin-bottom:0;opacity:1"><span class="sym">// </span>topics</span>
             Learning Log <span id="avg-completion-widget" class="mini-widget">Avg: 0%</span>
           </div>
           <div class="search-box">

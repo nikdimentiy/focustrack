@@ -267,7 +267,7 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
   }
   /* Lift floating elements above the bottom nav (~54px) */
   .cloud-auth-widget { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
-  #info-btn          { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
+  #info-btn          { display: none; }
 }
 @media (max-width: 420px) {
   nav#nav button { padding: 8px 14px; font-size: .62rem; letter-spacing: .06em; }
@@ -282,6 +282,10 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 .panel-corner.bl { bottom: 6px; left: 6px; border-width: 0 0 2px 2px; }
 .panel-corner.br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
 .panel-label { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .22em; color: var(--neon-cyan); text-transform: uppercase; opacity: .65; margin-bottom: 2px; }
+@media (max-width: 599px) {
+  .sym { display: none; }
+  .panel-label { font-family: var(--font-hud); font-size: .62rem; letter-spacing: .14em; opacity: .8; }
+}
 .panel-title { font-family: var(--font-hud); font-size: 1.05rem; font-weight: 700; letter-spacing: 1px; color: var(--text-main); text-transform: uppercase; margin-bottom: 18px; }
 .panel-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
 .panel-head .panel-title { margin-bottom: 0; }
@@ -1009,7 +1013,7 @@ tr.dragging { opacity: .4; }
 .settings-btn:hover { background: rgba(0,245,255,0.09); border-color: rgba(0,245,255,0.45); box-shadow: 0 0 28px rgba(0,245,255,0.22); transform: scale(1.1) translateY(-1px) rotate(30deg); color: #fff; }
 .settings-btn svg { width: 20px; height: 20px; }
 @media (max-width: 599px) {
-  #settings-btn { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); right: 70px; }
+  #settings-btn { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); right: 16px; }
 }
 
 /* ── Settings modal ── */

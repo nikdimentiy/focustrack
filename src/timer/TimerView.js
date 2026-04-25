@@ -22,7 +22,7 @@ export function mountTimerView(container) {
       <div class="panel">
         <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
         <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-        <div class="panel-label">// current session</div>
+        <div class="panel-label"><span class="sym">// </span>current session</div>
         <div class="panel-title">Deep Work Timer</div>
         <div class="session-body">
           <div class="session-left">
@@ -131,7 +131,7 @@ export function mountTimerView(container) {
       <div class="panel">
         <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
         <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-        <div class="panel-label">// weekly goal</div>
+        <div class="panel-label"><span class="sym">// </span>weekly goal</div>
         <div class="panel-title" id="weeklyGoalTitle">300-Min Target</div>
         <div class="goal-body">
           <div class="goal-progress">
@@ -160,7 +160,7 @@ export function mountTimerView(container) {
           <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
           <div class="panel-corner bl"></div><div class="panel-corner br"></div>
           <div class="panel-head">
-            <div><div class="panel-label">// consistency</div><div class="panel-title">Heatmap</div></div>
+            <div><div class="panel-label"><span class="sym">// </span>consistency</div><div class="panel-title">Heatmap</div></div>
             <div class="range-toggle">
               <button class="active" data-range="7days">Last 7d</button>
               <button data-range="week">This week</button>
@@ -172,7 +172,7 @@ export function mountTimerView(container) {
         <div class="panel">
           <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
           <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-          <div class="panel-head"><div><div class="panel-label">// log</div><div class="panel-title">Completed Sessions</div></div></div>
+          <div class="panel-head"><div><div class="panel-label"><span class="sym">// </span>log</div><div class="panel-title">Completed Sessions</div></div></div>
           <ul class="session-list" id="sessionList"></ul>
           <div class="empty-msg" id="emptyDW">No sessions yet — start your first block.</div>
         </div>
