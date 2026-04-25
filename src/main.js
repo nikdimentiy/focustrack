@@ -6,7 +6,7 @@ import './design/components.css';
 import { timerStore } from './store/timerStore.js';
 import { trackerStore } from './store/trackerStore.js';
 import { loadTimerState, loadSessions, loadTopics } from './services/storage.js';
-import { restoreTimer, startTimer, pauseTimer, stopTimer, resetTimer } from './timer/timerEngine.js';
+import { restoreTimer, startTimer, pauseTimer, stopTimer, resetTimer, updateSession, setSessionNote } from './timer/timerEngine.js';
 import { calcStatus } from './shared/utils.js';
 
 import { AuthWidget } from './auth/AuthWidget.js';
@@ -50,6 +50,7 @@ async function boot() {
   mountTimerView(document.getElementById('dw-view'));
   mountTrackerView(document.getElementById('tr-view'));
   mountAnalyticsView(document.getElementById('an-view'));
+  _mountNoteModal();
 
   // Command palette
   const palette = new CommandPalette();
@@ -57,16 +58,18 @@ async function boot() {
     { label: 'Go to Timer',           group: 'Navigate', shortcut: '1',     action: () => Nav.switchTo('dw') },
     { label: 'Go to Tracker',         group: 'Navigate', shortcut: '2',     action: () => Nav.switchTo('tr') },
     { label: 'Go to Analytics',       group: 'Navigate', shortcut: '3',     action: () => Nav.switchTo('an') },
-    { label: 'Start Timer',           group: 'Timer',    shortcut: 'Space', action: () => { Nav.switchTo('dw'); startTimer(); } },
-    { label: 'Pause Timer',           group: 'Timer',                       action: () => { Nav.switchTo('dw'); pauseTimer(); } },
-    { label: 'Stop Timer',            group: 'Timer',                       action: () => { Nav.switchTo('dw'); stopTimer(); } },
-    { label: 'Reset Timer',           group: 'Timer',                       action: () => { Nav.switchTo('dw'); resetTimer(); } },
-    { label: 'Add Topic',             group: 'Tracker',                     action: () => { Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); } },
-    { label: 'Export Topics (JSON)',  group: 'Tracker',                     action: () => exportTopics() },
-    { label: 'Export Sessions (CSV)', group: 'Tracker',                     action: () => exportSessionsCSV() },
-    { label: 'Export Full Backup',    group: 'Tracker',                     action: () => exportFullBackup() },
-    { label: 'Open Settings',         group: 'App',      shortcut: ',',     action: () => document.getElementById('settings-open')?.click() },
-    { label: 'Open Help',             group: 'App',      shortcut: '?',     action: () => document.getElementById('info-open')?.click() },
+    { label: 'Start Timer',           group: 'Timer',    shortcut: 'Ctrl+Shift+S', action: () => { Nav.switchTo('dw'); startTimer(); } },
+    { label: 'Pause Timer',           group: 'Timer',    shortcut: 'Ctrl+Shift+H', action: () => { Nav.switchTo('dw'); pauseTimer(); } },
+    { label: 'Stop Timer',            group: 'Timer',    shortcut: 'Ctrl+Shift+P', action: () => { Nav.switchTo('dw'); stopTimer(); } },
+    { label: 'Reset Timer',           group: 'Timer',    shortcut: 'Ctrl+Shift+R', action: () => { Nav.switchTo('dw'); resetTimer(); } },
+    { label: 'Add Topic',             group: 'Tracker',  shortcut: 'Ctrl+Shift+T', action: () => { Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); } },
+    { label: 'Log Note',              group: 'Timer',    shortcut: 'Ctrl+Shift+N', action: () => _openNoteModal() },
+    { label: 'Export Topics (JSON)',  group: 'Tracker',  shortcut: 'Ctrl+Alt+J',   action: () => exportTopics() },
+    { label: 'Export Sessions (CSV)', group: 'Tracker',  shortcut: 'Ctrl+Alt+C',   action: () => exportSessionsCSV() },
+    { label: 'Export Full Backup',    group: 'Tracker',  shortcut: 'Ctrl+Alt+B',   action: () => exportFullBackup() },
+    { label: 'Open Shortcuts',        group: 'App',      shortcut: 'Ctrl+K',       action: () => palette.open() },
+    { label: 'Open Settings',         group: 'App',      shortcut: ',',            action: () => document.getElementById('settings-open')?.click() },
+    { label: 'Open Help',             group: 'App',      shortcut: '?',            action: () => document.getElementById('info-open')?.click() },
   ]);
 
   // Keyboard shortcuts
@@ -83,6 +86,27 @@ async function boot() {
       e.preventDefault();
       palette.isOpen() ? palette.close() : palette.open();
       return;
+    }
+
+    // Ctrl+Shift+* timer & tracker shortcuts (work everywhere, including inputs)
+    if (e.ctrlKey && e.shiftKey && !e.altKey) {
+      switch (e.key.toUpperCase()) {
+        case 'S': e.preventDefault(); Nav.switchTo('dw'); startTimer(); return;
+        case 'H': e.preventDefault(); Nav.switchTo('dw'); pauseTimer(); return;
+        case 'P': e.preventDefault(); Nav.switchTo('dw'); stopTimer(); return;
+        case 'R': e.preventDefault(); Nav.switchTo('dw'); resetTimer(); return;
+        case 'T': e.preventDefault(); Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); return;
+        case 'N': e.preventDefault(); _openNoteModal(); return;
+      }
+    }
+
+    // Ctrl+Alt+* export shortcuts (work everywhere, including inputs)
+    if (e.ctrlKey && e.altKey && !e.shiftKey) {
+      switch (e.key.toUpperCase()) {
+        case 'J': e.preventDefault(); exportTopics(); return;
+        case 'C': e.preventDefault(); exportSessionsCSV(); return;
+        case 'B': e.preventDefault(); exportFullBackup(); return;
+      }
     }
 
     if (e.key === 'Escape') {
@@ -289,6 +313,73 @@ function _mountOfflineBar() {
 
   window.addEventListener('online',  _render);
   window.addEventListener('offline', _render);
+}
+
+function _mountNoteModal() {
+  const el = document.createElement('div');
+  el.id = 'note-modal';
+  el.innerHTML = `
+    <div class="note-box">
+      <div class="modal-corner tl"></div><div class="modal-corner tr"></div>
+      <div class="modal-corner bl"></div><div class="modal-corner br"></div>
+      <div class="note-title">Log Note</div>
+      <div class="note-sub" id="note-sub"></div>
+      <input class="note-input" id="note-input" type="text" placeholder="Note for this session…" maxlength="200" autocomplete="off" />
+      <div class="note-actions">
+        <button class="btn btn-start" id="note-save">Save Note</button>
+        <button class="btn btn-reset" id="note-cancel">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+
+  const close = () => el.classList.remove('active');
+  document.getElementById('note-cancel').addEventListener('click', close);
+  el.addEventListener('click', e => { if (e.target === el) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && el.classList.contains('active')) { e.stopPropagation(); close(); } });
+}
+
+function _openNoteModal() {
+  const modal  = document.getElementById('note-modal');
+  const input  = document.getElementById('note-input');
+  const sub    = document.getElementById('note-sub');
+  const saveBtn = document.getElementById('note-save');
+  const s = timerStore.get();
+
+  input.value = '';
+
+  if (s.running || s.paused) {
+    sub.textContent = `Session: ${s.task?.trim() || 'Untitled Flow'}`;
+  } else if (s.sessions?.length) {
+    const last = [...s.sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    sub.textContent = `Last session: ${last.task || 'Untitled Flow'}`;
+  } else {
+    sub.textContent = 'No session found';
+  }
+
+  modal.classList.add('active');
+  requestAnimationFrame(() => input.focus());
+
+  const close = () => modal.classList.remove('active');
+
+  const _save = () => {
+    const note = input.value.trim();
+    if (!note) { close(); return; }
+    const cur = timerStore.get();
+    if (cur.running || cur.paused) {
+      setSessionNote(note);
+      toast.show('Note saved — will attach when session ends', 'success');
+    } else if (cur.sessions?.length) {
+      const last = [...cur.sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      updateSession(last.timestamp, { note });
+      toast.show('Note added to last session', 'success');
+    } else {
+      toast.show('No session to attach note to', 'error');
+    }
+    close();
+  };
+
+  saveBtn.onclick = _save;
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); _save(); } };
 }
 
 boot();

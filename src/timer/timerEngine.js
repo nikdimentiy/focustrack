@@ -56,14 +56,18 @@ function persist() {
 }
 
 function _buildSession(s) {
-  return {
+  const sess = {
     task: s.task.trim() || 'Untitled Flow', intensity: s.intensity,
     tags: s.tags?.length ? [...s.tags] : [],
     minutes: Math.max(1, Math.floor(s.elapsedSeconds / 60)),
     date: fmtDate(new Date()), timestamp: new Date().toISOString(),
     startedAt: s.sessionStartedAt ? new Date(s.sessionStartedAt).toISOString() : null,
   };
+  if (s.draftNote) sess.note = s.draftNote;
+  return sess;
 }
+
+export function setSessionNote(note) { timerStore.set({ draftNote: note || null }); }
 
 function _completeBreak() {
   clearInterval(_interval); _interval = null;
@@ -88,7 +92,7 @@ function _completeSession() {
 
   timerStore.set({
     running: false, paused: false, elapsedSeconds: 0, sessionStartedAt: null,
-    sessions, pomodoroPhase: goBreak ? 'break' : 'work',
+    sessions, pomodoroPhase: goBreak ? 'break' : 'work', draftNote: null,
   });
   saveSessions(sessions);
   cloudSaveSession(sess);
@@ -149,7 +153,7 @@ export function stopTimer() {
   if (s.elapsedSeconds > 0 && s.pomodoroPhase !== 'break') {
     const sess = _buildSession(s);
     const sessions = [...s.sessions, sess];
-    timerStore.set({ running: false, paused: false, elapsedSeconds: 0, sessionStartedAt: null, sessions, pomodoroPhase: 'work' });
+    timerStore.set({ running: false, paused: false, elapsedSeconds: 0, sessionStartedAt: null, sessions, pomodoroPhase: 'work', draftNote: null });
     saveSessions(sessions);
     cloudSaveSession(sess);
   } else {

@@ -94,36 +94,37 @@ export function mountTimerView(container) {
               <div class="stat"><div class="stat-label">Streak</div><div class="stat-value" id="streakDays">0</div><div class="stat-sub">Day streak</div></div>
             </div>
           </div>
-          <div class="session-right">
-            <div class="arc-wrap">
-              <svg class="arc-svg" viewBox="0 0 160 160">
-                <g id="arcTicks"></g>
-                <circle fill="none" stroke="rgba(0,245,255,0.06)" stroke-width="0.8" cx="80" cy="80" r="50"/>
-                <circle class="arc-track" cx="80" cy="80" r="65"/>
-                <circle class="arc-fill" id="arcFill" cx="80" cy="80" r="65"/>
-              </svg>
-              <div class="arc-center">
-                <div class="timer-pct" id="timerPct">0%</div>
-                <div class="timer-digits" id="timerEl">00:00:00</div>
-                <div class="timer-sub" id="timerSub">elapsed</div>
-                <div class="phase-badge" id="phaseBadge"></div>
-              </div>
-            </div>
-            <div class="btn-col">
-              <button class="btn btn-start" id="startBtn">▶&ensp;Start Session</button>
-              <div class="btn-pair" id="btnPair" style="display:none">
-                <button class="btn btn-pause" id="pauseResumeBtn"><i class="fas fa-pause"></i>&ensp;Pause</button>
-                <button class="btn btn-stop"  id="stopBtn"><i class="fas fa-stop-circle"></i>&ensp;Stop</button>
-              </div>
-              <button class="btn btn-reset" id="resetBtn" style="display:none"><i class="fas fa-undo-alt"></i>&ensp;Reset</button>
-              <label class="tick-toggle-label">
-                <input type="checkbox" id="tickSoundToggle"> <span>🔊 Tick sound</span>
-              </label>
-              <div id="dwCloudChip" class="dw-cloud-chip" style="display:none">
-                <span class="dw-cloud-dot" id="dwCloudDot"></span>
-                <span id="dwCloudLabel">cloud sync</span>
-              </div>
-            </div>
+        </div>
+      </div>
+
+      <div class="session-right">
+        <div class="arc-wrap">
+          <svg class="arc-svg" viewBox="0 0 160 160">
+            <g id="arcTicks"></g>
+            <circle fill="none" stroke="rgba(0,245,255,0.06)" stroke-width="0.8" cx="80" cy="80" r="50"/>
+            <circle class="arc-track" cx="80" cy="80" r="65"/>
+            <circle class="arc-fill" id="arcFill" cx="80" cy="80" r="65"/>
+          </svg>
+          <div class="arc-center">
+            <div class="timer-pct" id="timerPct">0%</div>
+            <div class="timer-digits" id="timerEl">00:00:00</div>
+            <div class="timer-sub" id="timerSub">elapsed</div>
+            <div class="phase-badge" id="phaseBadge"></div>
+          </div>
+        </div>
+        <div class="btn-col">
+          <button class="btn btn-start" id="startBtn">▶&ensp;Start Session</button>
+          <div class="btn-pair" id="btnPair" style="display:none">
+            <button class="btn btn-pause" id="pauseResumeBtn"><i class="fas fa-pause"></i>&ensp;Pause</button>
+            <button class="btn btn-stop"  id="stopBtn"><i class="fas fa-stop-circle"></i>&ensp;Stop</button>
+          </div>
+          <button class="btn btn-reset" id="resetBtn" style="display:none"><i class="fas fa-undo-alt"></i>&ensp;Reset</button>
+          <label class="tick-toggle-label">
+            <input type="checkbox" id="tickSoundToggle"> <span>🔊 Tick sound</span>
+          </label>
+          <div id="dwCloudChip" class="dw-cloud-chip" style="display:none">
+            <span class="dw-cloud-dot" id="dwCloudDot"></span>
+            <span id="dwCloudLabel">cloud sync</span>
           </div>
         </div>
       </div>

@@ -94,7 +94,7 @@
 /* Info modal overlay */
 #info-modal { display: none; position: fixed; inset: 0; background: rgba(5,8,16,0.78); backdrop-filter: blur(7px); z-index: 19000; align-items: center; justify-content: center; }
 #info-modal.active { display: flex; }
-.info-box { background: rgba(6,12,28,0.97); border: 1px solid rgba(0,245,255,0.18); border-top: 1px solid rgba(0,245,255,0.48); border-radius: 14px; padding: 24px 26px 22px; width: 90%; max-width: 420px; position: relative; box-shadow: 0 0 60px rgba(0,245,255,0.07), 0 24px 64px rgba(0,0,0,0.7); }
+.info-box { background: rgba(6,12,28,0.97); border: 1px solid rgba(0,245,255,0.18); border-top: 1px solid rgba(0,245,255,0.48); border-radius: 14px; padding: 24px 26px 22px; width: 90%; max-width: 420px; max-height: 88vh; overflow-y: auto; position: relative; box-shadow: 0 0 60px rgba(0,245,255,0.07), 0 24px 64px rgba(0,0,0,0.7); }
 .info-box::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg, rgba(0,245,255,0.03) 0%, transparent 55%); pointer-events: none; }
 
 /* Close button */
@@ -315,7 +315,7 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .app { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; display: grid; gap: 14px; }
 #dw-view .session-body  { display: flex; gap: 28px; align-items: flex-start; }
 #dw-view .session-left  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-#dw-view .session-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+#dw-view .session-right { display: flex; flex-direction: column; align-items: center; gap: 16px; justify-self: center; }
 #dw-view .task-kicker   { font-family: var(--font-mono); font-size: .58rem; text-transform: uppercase; letter-spacing: .2em; color: var(--text-dim); margin-bottom: 4px; }
 #dw-view .task-name     { font-family: var(--font-title); font-size: clamp(16px, 2.2vw, 24px); font-weight: 700; letter-spacing: 1px; color: var(--text-main); line-height: 1.25; }
 #dw-view .task-name em  { font-style: normal; color: var(--neon-cyan); text-shadow: 0 0 12px rgba(0,245,255,0.5); }
@@ -402,8 +402,7 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .empty-msg    { padding: 22px; background: var(--bg-glass); border: 1px dashed rgba(0,245,255,0.18); border-radius: 8px; text-align: center; font-family: var(--font-mono); font-size: .68rem; color: var(--text-dim); letter-spacing: .08em; }
 
 @media (max-width: 860px) {
-  #dw-view .session-body { flex-direction: column; }
-  #dw-view .session-right { width: 100%; align-items: center; }
+  #dw-view .session-right { width: 100%; }
   #dw-view .btn-col { width: 100%; max-width: none; }
   #dw-view .stats-grid { grid-template-columns: repeat(2,1fr); }
   #dw-view .body-grid  { grid-template-columns: 1fr; }
@@ -431,22 +430,9 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
   #dw-view .panel       { padding: 22px 16px 24px; border-radius: 14px; }
   #dw-view .panel-title { font-size: 1.25rem; letter-spacing: .04em; margin-bottom: 16px; }
 
-  /* Flatten session-body so we can reorder children of session-left + session-right
-     in a single column flex */
-  #dw-view .session-body  { display: flex; flex-direction: column; gap: 16px; }
-  #dw-view .session-left,
-  #dw-view .session-right { display: contents; }
-
-  /* Layout order */
-  #dw-view .task-block              { order: 1; }
-  #dw-view .arc-wrap                { order: 2; }
-  #dw-view .btn-col                 { order: 3; }
-  #dw-view .mode-row                { order: 4; }
-  #dw-view .pomo-config-row         { order: 5; }
-  #dw-view .custom-minutes-row      { order: 6; }
-  #dw-view .setup-row:not(.tag-row) { order: 7; }
-  #dw-view .setup-row.tag-row       { order: 8; }
-  #dw-view .stats-grid              { order: 9; }
+  /* session-body is now session-left only — keep as column */
+  #dw-view .session-body { display: flex; flex-direction: column; gap: 16px; }
+  #dw-view .session-left { display: flex; }
 
   /* 1 ── Active Mission — feels like a hero card */
   #dw-view .task-block {
@@ -964,6 +950,19 @@ tr.dragging { opacity: .4; }
 }
 .break-actions { display: flex; gap: 10px; justify-content: center; }
 .break-actions .btn { min-width: 130px; }
+
+/* ── Note Modal ── */
+#note-modal { display: none; position: fixed; inset: 0; background: rgba(5,8,16,0.82); backdrop-filter: blur(8px); z-index: 17000; align-items: center; justify-content: center; }
+#note-modal.active { display: flex; }
+.note-box { background: rgba(6,12,28,0.97); border: 1px solid rgba(0,245,255,0.2); border-top: 2px solid rgba(0,245,255,0.5); border-radius: 14px; padding: 28px 28px 24px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 0 60px rgba(0,245,255,0.08), 0 24px 64px rgba(0,0,0,0.7); }
+.note-box::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg, rgba(0,245,255,0.04) 0%, transparent 55%); pointer-events: none; }
+.note-title { font-family: var(--font-title); font-size: 1.1rem; font-weight: 700; letter-spacing: .04em; color: var(--text-main); margin-bottom: 4px; position: relative; z-index: 1; }
+.note-sub { font-family: var(--font-mono); font-size: .62rem; color: var(--neon-cyan); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px; opacity: .7; position: relative; z-index: 1; }
+.note-input { width: 100%; height: 44px; border-radius: 8px; border: 1px solid var(--border-dim); background: rgba(0,245,255,0.03); color: var(--text-main); padding: 0 14px; font-family: var(--font-hud); font-size: .95rem; outline: none; transition: border-color 120ms, box-shadow 120ms; box-sizing: border-box; margin-bottom: 16px; position: relative; z-index: 1; }
+.note-input:focus { border-color: rgba(0,245,255,0.4); box-shadow: 0 0 10px rgba(0,245,255,0.12); }
+.note-input::placeholder { color: rgba(200,230,240,0.22); }
+.note-actions { display: flex; gap: 8px; position: relative; z-index: 1; }
+.note-actions .btn { flex: 1; }
 
 /* ── Reflection Overlay ── */
 .reflect-overlay {

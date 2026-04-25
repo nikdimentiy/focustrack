@@ -126,17 +126,65 @@ export function mountInfoButton(container) {
           <span class="info-key">3</span>
           <span class="info-desc">Analytics</span>
         </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+K</span>
+          <span class="info-desc">Open shortcuts menu</span>
+        </div>
       </div>
 
-      <div class="info-section-lbl">Controls</div>
+      <div class="info-section-lbl">Timer</div>
       <div class="info-shortcuts">
+        <div class="info-row">
+          <span class="info-key">Ctrl+Shift+S</span>
+          <span class="info-desc">Start timer</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Shift+H</span>
+          <span class="info-desc">Pause timer</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Shift+P</span>
+          <span class="info-desc">Stop timer</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Shift+R</span>
+          <span class="info-desc">Reset timer</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Shift+N</span>
+          <span class="info-desc">Log note for session</span>
+        </div>
         <div class="info-row">
           <span class="info-key">Space</span>
           <div class="info-desc-wrap">
-            <span class="info-desc">Start / Stop timer</span>
+            <span class="info-desc">Start / Pause timer</span>
             <span class="info-sub">Timer view only</span>
           </div>
         </div>
+      </div>
+
+      <div class="info-section-lbl">Tracker</div>
+      <div class="info-shortcuts">
+        <div class="info-row">
+          <span class="info-key">Ctrl+Shift+T</span>
+          <span class="info-desc">Add topic</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Alt+J</span>
+          <span class="info-desc">Export topics (JSON)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Alt+C</span>
+          <span class="info-desc">Export sessions (CSV)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Ctrl+Alt+B</span>
+          <span class="info-desc">Export full backup</span>
+        </div>
+      </div>
+
+      <div class="info-section-lbl">App</div>
+      <div class="info-shortcuts">
         <div class="info-row">
           <span class="info-key">Esc</span>
           <span class="info-desc">Close modal</span>
