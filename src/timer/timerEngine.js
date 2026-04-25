@@ -9,6 +9,26 @@ export const ARC_FULL = 408;
 
 const _MODE_TARGETS = { deepwork: 5400 };
 
+// ── Haptic ─────────────────────────────────────────────────────────────────
+const _haptic = p => { try { navigator.vibrate?.(p); } catch (_) {} };
+
+// ── Wake Lock ──────────────────────────────────────────────────────────────
+let _wakeLock = null;
+async function _acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+  } catch (_) {}
+}
+function _releaseWakeLock() {
+  if (_wakeLock) { _wakeLock.release().catch(() => {}); _wakeLock = null; }
+}
+// Re-acquire when tab returns to foreground while timer is running
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && timerStore.get().running) _acquireWakeLock();
+});
+
 export function getTarget(state) {
   if (state.pomodoroPhase === 'break') return (state.pomodoroBreakMins || 5) * 60;
   if (state.timerMode === 'pomodoro') return (state.pomodoroWorkMins || 25) * 60;
@@ -48,6 +68,8 @@ function _buildSession(s) {
 function _completeBreak() {
   clearInterval(_interval); _interval = null;
   const s = timerStore.get();
+  _releaseWakeLock();
+  _haptic([30, 60, 30]);
   timerStore.set({ running: false, paused: false, elapsedSeconds: 0, sessionStartedAt: null, pomodoroPhase: 'work' });
   persist();
   sendNotification('Break complete!', 'Ready for the next session?');
@@ -60,6 +82,9 @@ function _completeSession() {
   const sess = _buildSession(s);
   const sessions = [...s.sessions, sess];
   const goBreak = s.autoBreak && s.timerMode === 'pomodoro';
+
+  _releaseWakeLock();
+  _haptic([50, 100, 50]);
 
   timerStore.set({
     running: false, paused: false, elapsedSeconds: 0, sessionStartedAt: null,
@@ -76,7 +101,7 @@ function _completeSession() {
     _breakStartSubs.forEach(fn => fn({ breakMins: s.pomodoroBreakMins || 5 }));
     setTimeout(() => startTimer(), 100);
   } else {
-    _completeSubs.forEach(fn => fn({ mode: s.timerMode, minutes: sess.minutes, task: sess.task }));
+    _completeSubs.forEach(fn => fn({ mode: s.timerMode, minutes: sess.minutes, task: sess.task, timestamp: sess.timestamp }));
   }
 }
 
@@ -100,6 +125,8 @@ export function startTimer() {
   timerStore.set({ running: true, paused: false, sessionStartedAt: startedAt });
   if (_interval) clearInterval(_interval);
   _interval = setInterval(_tick, 1000);
+  _acquireWakeLock();
+  _haptic([10, 30, 10]);
   persist();
 }
 
@@ -108,6 +135,8 @@ export function pauseTimer() {
   if (!s.running) return;
   clearInterval(_interval); _interval = null;
   timerStore.set({ running: false, paused: true, sessionStartedAt: null });
+  _releaseWakeLock();
+  _haptic([15]);
   persist();
 }
 
@@ -115,6 +144,8 @@ export function stopTimer() {
   const s = timerStore.get();
   if (!s.running && !s.paused && s.elapsedSeconds === 0) return;
   clearInterval(_interval); _interval = null;
+  _releaseWakeLock();
+  _haptic([20]);
   if (s.elapsedSeconds > 0 && s.pomodoroPhase !== 'break') {
     const sess = _buildSession(s);
     const sessions = [...s.sessions, sess];
@@ -129,6 +160,7 @@ export function stopTimer() {
 
 export function resetTimer() {
   clearInterval(_interval); _interval = null;
+  _releaseWakeLock();
   timerStore.set({ running: false, paused: false, elapsedSeconds: 0, sessionStartedAt: null, pomodoroPhase: 'work' });
   persist();
 }

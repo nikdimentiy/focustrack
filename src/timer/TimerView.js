@@ -178,6 +178,25 @@ export function mountTimerView(container) {
         </div>
       </div>
 
+      <div id="reflect-overlay" class="reflect-overlay">
+        <div class="reflect-box">
+          <div class="reflect-check">✓</div>
+          <div class="reflect-title">How was your focus?</div>
+          <div class="reflect-sub" id="reflectSub"></div>
+          <div class="reflect-ratings">
+            <button class="reflect-btn" data-q="flow"><span class="reflect-emoji">🌊</span><span class="reflect-lbl">Flow</span></button>
+            <button class="reflect-btn" data-q="okay"><span class="reflect-emoji">👍</span><span class="reflect-lbl">Okay</span></button>
+            <button class="reflect-btn" data-q="distracted"><span class="reflect-emoji">😵</span><span class="reflect-lbl">Distracted</span></button>
+          </div>
+          <input class="reflect-note" id="reflectNote" type="text" placeholder="One-line note (optional)" maxlength="120" autocomplete="off" />
+          <div class="reflect-actions">
+            <button class="btn btn-start reflect-save-btn" id="reflectSave">Save &amp; Continue</button>
+            <button class="btn btn-reset reflect-skip-btn" id="reflectSkip">Skip</button>
+          </div>
+          <div class="reflect-countdown">Auto-continue in <span id="reflectSecs">15</span>s</div>
+        </div>
+      </div>
+
       <div id="break-overlay" class="break-overlay">
         <div class="break-box">
           <div class="break-check">✓</div>
@@ -350,7 +369,7 @@ export function mountTimerView(container) {
   );
 
   // ── Break overlay ──────────────────────────────────────────────────────────
-  const _showBreak = ({ mode, minutes, task }) => {
+  const _displayBreak = ({ mode, minutes, task }) => {
     if (mode === 'break-end') {
       document.getElementById('breakTitle').textContent  = 'Break Complete!';
       document.getElementById('breakDetail').textContent = `${minutes} min break done — ready to focus again?`;
@@ -366,11 +385,65 @@ export function mountTimerView(container) {
     container.querySelector('#breakNewSession').onclick = () => { _close(); startTimer(); };
   };
 
+  // ── Reflection overlay ─────────────────────────────────────────────────────
+  const reflectOverlay = container.querySelector('#reflect-overlay');
+
+  const _showReflect = ({ minutes, task, timestamp }, onDone) => {
+    const noteEl  = container.querySelector('#reflectNote');
+    const secsEl  = container.querySelector('#reflectSecs');
+    const subEl   = container.querySelector('#reflectSub');
+    let selectedQ = null;
+    let _secs = 15;
+    let _timer;
+
+    noteEl.value = '';
+    subEl.textContent = `${minutes} min · ${task || 'Untitled Flow'}`;
+    reflectOverlay.querySelectorAll('.reflect-btn').forEach(b => b.classList.remove('selected'));
+    secsEl.textContent = _secs;
+
+    const _finish = save => {
+      clearInterval(_timer);
+      reflectOverlay.classList.remove('active');
+      if (save && selectedQ) {
+        const patch = { quality: selectedQ };
+        const note = noteEl.value.trim();
+        if (note) patch.note = note;
+        updateSession(timestamp, patch);
+      }
+      onDone();
+    };
+
+    reflectOverlay.querySelectorAll('.reflect-btn').forEach(btn => {
+      btn.onclick = () => {
+        reflectOverlay.querySelectorAll('.reflect-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedQ = btn.dataset.q;
+      };
+    });
+
+    container.querySelector('#reflectSave').onclick = () => _finish(true);
+    container.querySelector('#reflectSkip').onclick = () => _finish(false);
+
+    _timer = setInterval(() => {
+      _secs--;
+      secsEl.textContent = _secs;
+      if (_secs <= 0) _finish(false);
+    }, 1000);
+
+    reflectOverlay.classList.add('active');
+  };
+
+  const _showBreak = data => {
+    if (data.mode === 'break-end') { _displayBreak(data); return; }
+    _showReflect(data, () => _displayBreak(data));
+  };
+
   onSessionComplete(_showBreak);
   onBreakStart(({ breakMins }) => {
     toast.show(`☕ Break started — ${breakMins} min. Rest up!`, 'success');
   });
   breakOverlay.addEventListener('click', e => { if (e.target === breakOverlay) breakOverlay.classList.remove('active'); });
+  reflectOverlay.addEventListener('click', e => { if (e.target === reflectOverlay) { /* intentionally non-dismissable */ } });
 
   // ── Sync state → UI ────────────────────────────────────────────────────────
   const syncBtns = s => {
@@ -512,11 +585,14 @@ function _renderSessions(sessions) {
   const empty = document.getElementById('emptyDW');
   if (!sessions.length) { list.innerHTML = ''; if (empty) empty.style.display = ''; return; }
   if (empty) empty.style.display = 'none';
+  const _Q_LABEL = { flow: '🌊 Flow', okay: '👍 Okay', distracted: '😵 Distracted' };
+
   list.innerHTML = sessions.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(s => `
     <li class="session-item">
       <div class="session-row">
         <span class="session-task">${s.task}</span>
         <div class="session-row-end">
+          ${s.quality ? `<span class="session-quality sq-${s.quality}">${_Q_LABEL[s.quality]}</span>` : ''}
           <span class="session-dur">${s.minutes} min</span>
           <button class="session-edit-btn" data-ts="${s.timestamp}" title="Edit session">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -524,6 +600,7 @@ function _renderSessions(sessions) {
         </div>
       </div>
       <div class="session-meta">${s.intensity} · ${readableDate(s.date)} · ${new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      ${s.note ? `<div class="session-note">${_esc(s.note)}</div>` : ''}
       ${s.tags?.length ? `<div class="session-tags">${s.tags.map(t => `<span class="session-tag">${_esc(t)}</span>`).join('')}</div>` : ''}
     </li>`).join('');
 
