@@ -17,6 +17,56 @@ window.addEventListener('online', () => {
   if (_retryPending) { _retryPending = false; doSync(); }
 });
 
+function _topicKey(t) { return `${t.topic}||${t.dateOfLearning || t.dateLearned || ''}`; }
+
+function _detectTopicConflict(local, cloud) {
+  if (!local.length) return null;
+  const localKeys = new Set(local.map(_topicKey));
+  const cloudKeys = new Set(cloud.map(_topicKey));
+  const onlyLocal = local.filter(t => !cloudKeys.has(_topicKey(t)));
+  const onlyCloud = cloud.filter(t => !localKeys.has(_topicKey(t)));
+  if (onlyLocal.length > 0 && onlyCloud.length > 0) {
+    return { onlyLocal: onlyLocal.length, onlyCloud: onlyCloud.length };
+  }
+  return null;
+}
+
+function _notifyConflict(conflict, localTopics, cloudTopics) {
+  if (document.getElementById('sync-conflict-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'sync-conflict-banner';
+  banner.className = 'sync-conflict-banner';
+  banner.innerHTML = `
+    <div class="scb-inner">
+      <svg class="scb-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <span class="scb-text">
+        Sync conflict: <b>${conflict.onlyLocal}</b> local topic${conflict.onlyLocal > 1 ? 's' : ''} not on cloud,
+        <b>${conflict.onlyCloud}</b> cloud topic${conflict.onlyCloud > 1 ? 's' : ''} not local.
+        Keep which version?
+      </span>
+      <button class="scb-btn scb-local" id="scb-keep-local">Keep Local</button>
+      <button class="scb-btn scb-cloud" id="scb-keep-cloud">Use Cloud</button>
+      <button class="scb-dismiss" id="scb-dismiss" aria-label="Dismiss">×</button>
+    </div>`;
+  document.body.appendChild(banner);
+
+  const remove = () => banner.remove();
+  document.getElementById('scb-dismiss').addEventListener('click', remove);
+  document.getElementById('scb-keep-local').addEventListener('click', async () => {
+    cloudSaveTopics(localTopics);
+    remove();
+  });
+  document.getElementById('scb-keep-cloud').addEventListener('click', async () => {
+    trackerStore.set(cloudTopics);
+    await saveTopics(cloudTopics);
+    remove();
+  });
+
+  setTimeout(remove, 30000);
+}
+
 export async function doSync() {
   if (_syncing) return;
   _syncing = true; notify('syncing');
@@ -48,8 +98,14 @@ export async function doSync() {
     const cloudTopics = await fetchCloudTopics();
     if (cloudTopics) {
       const withStatus = cloudTopics.map(t => ({ ...t, status: calcStatus(t.nextRepeat) }));
-      trackerStore.set(withStatus);
-      await saveTopics(withStatus);
+      const localTopics = trackerStore.get();
+      const conflict = _detectTopicConflict(localTopics, cloudTopics);
+      if (conflict) {
+        _notifyConflict(conflict, localTopics, withStatus);
+      } else {
+        trackerStore.set(withStatus);
+        await saveTopics(withStatus);
+      }
     } else {
       // push local topics to cloud on first login
       const localTopics = trackerStore.get();

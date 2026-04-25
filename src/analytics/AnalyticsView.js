@@ -3,6 +3,7 @@ import { trackerStore } from '../store/trackerStore.js';
 import { Nav } from '../shared/Nav.js';
 import { fmtDate, calcStreak, calcMaxStreak, weekStart, byDate, calcProgress, readableDateLong, parseLocalDate } from '../shared/utils.js';
 import { exportSessionsCSV, exportFullBackup } from '../tracker/trackerEngine.js';
+import { settings } from '../shared/settings.js';
 
 const _esc    = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const _srBadge = ease => {
@@ -84,6 +85,7 @@ export function mountAnalyticsView(container) {
   Nav.onSwitch(v => { if (v === 'an') _render(); });
   timerStore.subscribe(_render);
   trackerStore.subscribe(_render);
+  settings.subscribe(_render);
 
   const _s0 = timerStore.get().sessions || [];
   const _t0 = trackerStore.get();
@@ -220,20 +222,47 @@ function _renderDailyChart(sessions, range = '14d') {
   const days = _getDaysForRange(range).map(d => ({
     date: fmtDate(d), day: d.getDate(), min: map[fmtDate(d)] || 0,
   }));
-  const maxMin   = Math.max(...days.map(d => d.min), 1);
-  const totalMin = days.reduce((s, d) => s + d.min, 0);
-  const title    = _RANGE_TITLES[range] || '// Activity';
+
+  const dailyGoal = settings.get().dailyGoalMins;
+  const maxMin    = Math.max(...days.map(d => d.min), dailyGoal, 1);
+  const totalMin  = days.reduce((s, d) => s + d.min, 0);
+  const daysHit   = days.filter(d => d.min >= dailyGoal).length;
+  const title     = _RANGE_TITLES[range] || '// Activity';
+  const goalPct   = Math.round((dailyGoal / maxMin) * 100);
+
+  // 7-day rolling average (only over active days)
+  const rollingAvg = days.map((_, i) => {
+    const slice = days.slice(Math.max(0, i - 6), i + 1).filter(d => d.min > 0);
+    return slice.length ? Math.round(slice.reduce((s, d) => s + d.min, 0) / slice.length) : null;
+  });
 
   el.innerHTML = `
-    <div class="an-section-title">${title} <span class="an-dim" style="font-size:.75em;font-weight:400">${(totalMin / 60).toFixed(1)}h total</span></div>
-    <div class="an-bar-chart">
-      ${days.map(d => `
-        <div class="an-bar-col" title="${d.date}: ${d.min} min">
-          <div class="an-bar-track">
-            <div class="an-bar-fill${d.min > 0 ? ' an-bar-active' : ''}" style="height:${Math.max(2, Math.round((d.min / maxMin) * 100))}%"></div>
-          </div>
-          <div class="an-bar-lbl">${d.day}</div>
-        </div>`).join('')}
+    <div class="an-section-title">
+      ${title}
+      <span class="an-dim" style="font-size:.75em;font-weight:400">${(totalMin / 60).toFixed(1)}h total</span>
+      <span class="an-goal-hit-badge ${daysHit > 0 ? 'an-goal-hit-pos' : ''}" title="${daysHit} of ${days.length} days hit goal">
+        ${daysHit}/${days.length} goal days
+      </span>
+    </div>
+    <div class="an-bar-chart-wrap">
+      <div class="an-goal-line" style="bottom:${goalPct}%" title="Daily goal: ${dailyGoal} min">
+        <span class="an-goal-line-lbl">${dailyGoal}m goal</span>
+      </div>
+      <div class="an-bar-chart">
+        ${days.map((d, i) => {
+          const avg    = rollingAvg[i];
+          const avgPct = avg !== null ? Math.round((avg / maxMin) * 100) : null;
+          const hit    = d.min >= dailyGoal && d.min > 0;
+          return `
+          <div class="an-bar-col" title="${d.date}: ${d.min} min${avg !== null ? ` · 7d avg: ${avg}m` : ''}">
+            <div class="an-bar-track">
+              <div class="an-bar-fill${d.min > 0 ? ' an-bar-active' : ''}${hit ? ' an-bar-goal-hit' : ''}" style="height:${Math.max(2, Math.round((d.min / maxMin) * 100))}%"></div>
+              ${avgPct !== null ? `<div class="an-avg-dot" style="bottom:${avgPct}%" title="7d avg: ${avg}m"></div>` : ''}
+            </div>
+            <div class="an-bar-lbl">${d.day}</div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
 }
 

@@ -14,9 +14,12 @@ import { doSync, onSyncStatus } from './services/syncEngine.js';
 import { Nav } from './shared/Nav.js';
 import { toast } from './shared/Toast.js';
 import { mountFooterWidget, mountInfoButton } from './shared/FooterWidget.js';
+import { mountSettingsButton } from './shared/SettingsModal.js';
 import { mountTimerView } from './timer/TimerView.js';
 import { mountTrackerView } from './tracker/TrackerView.js';
 import { mountAnalyticsView } from './analytics/AnalyticsView.js';
+import { checkReviewReminders } from './services/notifications.js';
+import { settings } from './shared/settings.js';
 
 async function boot() {
   // Restore persisted state before mounting views
@@ -31,6 +34,7 @@ async function boot() {
   // Mount UI
   mountFooterWidget(document.getElementById('footer-widget'));
   mountInfoButton(document.getElementById('info-btn'));
+  mountSettingsButton(document.getElementById('settings-btn'));
   toast.mount(document.getElementById('toast-container'));
   AuthWidget.mount(document.getElementById('auth-widget'));
 
@@ -47,11 +51,14 @@ async function boot() {
     const tag = (document.activeElement?.tagName || '').toLowerCase();
     const inInput = tag === 'input' || tag === 'textarea' || tag === 'select';
     const modalOpen = document.getElementById('topic-modal')?.classList.contains('active') ||
-                      document.getElementById('session-edit-modal')?.classList.contains('active');
+                      document.getElementById('session-edit-modal')?.classList.contains('active') ||
+                      document.getElementById('settings-modal')?.classList.contains('active');
 
     if (e.key === 'Escape') {
       document.getElementById('topic-modal')?.classList.remove('active');
       document.getElementById('session-edit-modal')?.classList.remove('active');
+      document.getElementById('settings-modal')?.classList.remove('active');
+      document.getElementById('info-modal')?.classList.remove('active');
       return;
     }
     if (inInput || modalOpen) return;
@@ -60,11 +67,29 @@ async function boot() {
     if (e.key === '2') { e.preventDefault(); Nav.switchTo('tr'); return; }
     if (e.key === '3') { e.preventDefault(); Nav.switchTo('an'); return; }
 
+    if (e.key === '?' || e.key === '/') {
+      e.preventDefault();
+      document.getElementById('info-open')?.click();
+      return;
+    }
+
     if (e.key === ' ' && _currentView === 'dw') {
       e.preventDefault();
       timerStore.get().running ? pauseTimer() : startTimer();
       return;
     }
+  });
+
+  // Review reminders — check once on load (after a short delay so status is calculated)
+  setTimeout(() => {
+    const s = settings.get();
+    checkReviewReminders(trackerStore.get(), s.notifyReviews);
+  }, 3000);
+
+  // Re-check reminders when tracker data changes (e.g. after sync)
+  trackerStore.subscribe(topics => {
+    const s = settings.get();
+    if (s.notifyReviews) checkReviewReminders(topics, true);
   });
 
   // Init auth — triggers doSync() on login

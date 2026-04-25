@@ -1,5 +1,5 @@
 import { trackerStore } from '../store/trackerStore.js';
-import { deleteTopic, toggleRepeat, reorderTopics, refreshStatuses, exportTopics, importTopics } from './trackerEngine.js';
+import { deleteTopic, undeleteTopic, toggleRepeat, reorderTopics, refreshStatuses, exportTopics, importTopics } from './trackerEngine.js';
 import { openModal, mountModal } from './TopicModal.js';
 import { Nav } from '../shared/Nav.js';
 import { setTask, startTimer, stopTimer } from '../timer/timerEngine.js';
@@ -85,6 +85,45 @@ function _wireDnD(body) {
       if (_dragSrcIdx >= 0 && _dragSrcIdx !== targetIdx) reorderTopics(_dragSrcIdx, targetIdx);
       _dragSrcIdx = -1;
     });
+  });
+}
+
+// ── Touch DnD ─────────────────────────────────────────────────────────────────
+
+function _wireTouchDnD(body) {
+  let _srcIdx = -1, _srcRow = null;
+
+  const _rowAt = (x, y) => document.elementFromPoint(x, y)?.closest('tr[data-drag-idx]');
+
+  body.querySelectorAll('.drag-handle:not(.drag-disabled)').forEach(handle => {
+    const row = handle.closest('tr[data-drag-idx]');
+    if (!row) return;
+
+    handle.addEventListener('touchstart', e => {
+      e.preventDefault();
+      _srcIdx = Number(row.dataset.dragIdx);
+      _srcRow = row;
+      row.classList.add('dragging');
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      body.querySelectorAll('tr[data-drag-idx]').forEach(r => r.classList.remove('drag-over'));
+      const target = _rowAt(t.clientX, t.clientY);
+      if (target && target !== _srcRow) target.classList.add('drag-over');
+    }, { passive: false });
+
+    handle.addEventListener('touchend', e => {
+      const t = e.changedTouches[0];
+      body.querySelectorAll('tr[data-drag-idx]').forEach(r => r.classList.remove('drag-over', 'dragging'));
+      const target = _rowAt(t.clientX, t.clientY);
+      if (target && _srcIdx >= 0) {
+        const targetIdx = Number(target.dataset.dragIdx);
+        if (targetIdx !== _srcIdx) reorderTopics(_srcIdx, targetIdx);
+      }
+      _srcIdx = -1; _srcRow = null;
+    }, { passive: false });
   });
 }
 
@@ -252,9 +291,11 @@ function _renderTagBar(topics) {
   const allTags = [...new Set(topics.flatMap(t => t.tags || []))].sort();
   if (!allTags.length) { bar.style.display = 'none'; return; }
   bar.style.display = '';
+  const tagCounts = {};
+  topics.forEach(t => (t.tags || []).forEach(tag => { tagCounts[tag] = (tagCounts[tag] || 0) + 1; }));
   bar.innerHTML = [
-    `<button class="tag-filter-pill${!_activeTag ? ' active' : ''}" data-tag="">All</button>`,
-    ...allTags.map(tag => `<button class="tag-filter-pill${_activeTag === tag ? ' active' : ''}" data-tag="${_esc(tag)}">${_esc(tag)}</button>`),
+    `<button class="tag-filter-pill${!_activeTag ? ' active' : ''}" data-tag="">All <span class="tag-count">${topics.length}</span></button>`,
+    ...allTags.map(tag => `<button class="tag-filter-pill${_activeTag === tag ? ' active' : ''}" data-tag="${_esc(tag)}">${_esc(tag)} <span class="tag-count">${tagCounts[tag]}</span></button>`),
   ].join('');
   bar.querySelectorAll('.tag-filter-pill').forEach(btn =>
     btn.addEventListener('click', () => {
@@ -340,7 +381,7 @@ function _renderTable(search = '') {
     </tr>`;
   }).join('');
 
-  if (canDrag) _wireDnD(body);
+  if (canDrag) { _wireDnD(body); _wireTouchDnD(body); }
 
   // ── Mobile cards ──
   if (cards) {
@@ -414,7 +455,10 @@ function _wireEvents(root, topics) {
   );
   root.querySelectorAll('.delete').forEach(btn =>
     btn.addEventListener('click', e => {
-      if (confirm('Delete this topic?')) { deleteTopic(Number(e.currentTarget.dataset.i)); toast.show('Topic deleted', 'success'); }
+      const idx   = Number(e.currentTarget.dataset.i);
+      const topic = { ...topics[idx] };
+      deleteTopic(idx);
+      toast.showUndo(`"${topic.topic}" deleted`, () => undeleteTopic(topic, idx));
     })
   );
   root.querySelectorAll('.focus-btn').forEach(btn =>

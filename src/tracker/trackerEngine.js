@@ -21,6 +21,12 @@ export function deleteTopic(index) {
   trackerStore.set(topics); persist(topics);
 }
 
+export function undeleteTopic(topic, atIndex) {
+  const topics = [...trackerStore.get()];
+  topics.splice(Math.min(atIndex, topics.length), 0, { ...topic });
+  trackerStore.set(topics); persist(topics);
+}
+
 export function toggleRepeat(index, field, quality = 'good') {
   const topics  = trackerStore.get();
   const topic   = topics[Number(index)];

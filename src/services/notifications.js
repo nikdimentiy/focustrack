@@ -69,3 +69,21 @@ export function sendNotification(title, body) {
     try { new Notification(title, { body, icon: '/icons/android-chrome-192x192.png', silent: true }); } catch {}
   }
 }
+
+export function checkReviewReminders(topics, notifyEnabled) {
+  if (!notifyEnabled) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const overdue = topics.filter(t => t.status === 'Overdue').length;
+  const today   = topics.filter(t => t.status === 'Today').length;
+  if (overdue === 0 && today === 0) return;
+  const parts = [];
+  if (today > 0)   parts.push(`${today} review${today > 1 ? 's' : ''} due today`);
+  if (overdue > 0) parts.push(`${overdue} overdue`);
+  try {
+    new Notification('FocusTrack — Review Time', {
+      body: parts.join(' · '),
+      icon: '/icons/android-chrome-192x192.png',
+      tag:  'ft-review-reminder',
+    });
+  } catch {}
+}

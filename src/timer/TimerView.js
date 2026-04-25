@@ -4,10 +4,9 @@ import { onSyncStatus } from '../services/syncEngine.js';
 import { unlockAudio, requestNotifyPermission } from '../services/notifications.js';
 import { fmtTime, readableDate, fmtDate, byDate, calcStreak, calcMaxStreak, heatDays, weekStart, parseLocalDate } from '../shared/utils.js';
 import { toast } from '../shared/Toast.js';
+import { settings } from '../shared/settings.js';
 
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-const WEEKLY_TARGET = 300;
 
 const _MODE_CFG = {
   pomodoro: { label: 'Pomodoro', dur: '25 min', break: 'Take a 5-minute break!' },
@@ -123,8 +122,8 @@ export function mountTimerView(container) {
       <div class="panel">
         <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
         <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-        <div class="panel-label">// weekly goal · five2five</div>
-        <div class="panel-title">300-Min Target</div>
+        <div class="panel-label">// weekly goal</div>
+        <div class="panel-title" id="weeklyGoalTitle">300-Min Target</div>
         <div class="goal-body">
           <div class="goal-progress">
             <div class="goal-nums">
@@ -427,17 +426,19 @@ function _updateStats(s) {
   const sw = weekStart();
   const weeklySess = sessions.filter(x => parseLocalDate(x.date) >= sw);
   const weeklyMin  = weeklySess.reduce((a, x) => a + x.minutes, 0);
-  const pct = Math.min(weeklyMin / WEEKLY_TARGET * 100, 100);
+  const weeklyTarget = settings.get().weeklyGoalMins;
+  const pct = Math.min(weeklyMin / weeklyTarget * 100, 100);
   const allTime = sessions.reduce((m, x) => Math.max(m, x.minutes), 0);
   const streak  = calcStreak(sessions), mstreak = calcMaxStreak(sessions);
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('todayMinutes', todayMin); set('todaySessions', todaySess.length);
   set('bestBlock', bestBlock);   set('streakDays', streak);
-  set('weeklyAchieved', `${weeklyMin} min achieved`); set('weeklyLeft', `${Math.max(WEEKLY_TARGET - weeklyMin, 0)} min left`);
+  set('weeklyAchieved', `${weeklyMin} min achieved`); set('weeklyLeft', `${Math.max(weeklyTarget - weeklyMin, 0)} min left`);
   set('weeklySessions', weeklySess.length); set('allTimeRecord', `${allTime} min`);
   set('maxStreak', `${mstreak} days`);
   set('kpiWeeklySess', weeklySess.length); set('kpiStreak', streak); set('kpiAllTime', allTime);
+  set('weeklyGoalTitle', `${weeklyTarget}-Min Target`);
   const fp = document.getElementById('weeklyProgress'); if (fp) fp.style.width = `${pct}%`;
 
   _renderHeatmap(sessions, s.heatmapRange);
