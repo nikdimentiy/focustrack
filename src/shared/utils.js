@@ -61,3 +61,25 @@ export const calcProgress = t => {
   if (t.repeat1) c++; if (t.repeat3) c++; if (t.repeat7) c++; if (t.repeat21) c++;
   return Math.round((c / 4) * 100);
 };
+
+export function adjustEase(ease, scheduledDate, completedDate) {
+  if (!scheduledDate || !completedDate) return ease;
+  const daysLate = Math.round(
+    (new Date(completedDate + 'T00:00:00') - new Date(scheduledDate + 'T00:00:00')) / 86400000
+  );
+  if (daysLate <= 1) return Math.min(3.0, ease + 0.1);
+  if (daysLate <= 3) return Math.max(1.3, ease - 0.15);
+  return Math.max(1.3, ease - 0.3);
+}
+
+export function computeNextRepeat(repeatKey, ease, today) {
+  const base = { repeat1: 3, repeat3: 7, repeat7: 14 }[repeatKey];
+  if (base === undefined) {
+    const d = new Date(today + 'T00:00:00');
+    d.setFullYear(d.getFullYear() + 1);
+    return fmtDate(d);
+  }
+  const d = new Date(today + 'T00:00:00');
+  d.setDate(d.getDate() + Math.max(1, Math.round(base * ease)));
+  return fmtDate(d);
+}

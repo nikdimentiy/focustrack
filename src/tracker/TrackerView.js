@@ -9,6 +9,13 @@ import { calcProgress, readableDateLong } from '../shared/utils.js';
 const _esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 let _activeTag = null;
 
+function _srStrength(ease) {
+  const e = ease ?? 2.5;
+  if (e < 1.6) return '<span class="sr-badge sr-weak">Weak</span>';
+  if (e < 2.2) return '<span class="sr-badge sr-growing">Growing</span>';
+  return '<span class="sr-badge sr-strong">Strong</span>';
+}
+
 const _svg = {
   focus: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
   edit:  `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`,
@@ -194,7 +201,7 @@ function _renderTable(search = '') {
         <div class="topic-icon">${i + 1}</div>
         <div class="topic-info">
           <div class="topic-name">${topic.topic}</div>
-          <div class="topic-meta">${pct}% complete</div>
+          <div class="topic-meta">${pct}% complete ${_srStrength(topic.ease)}</div>
           ${notesHtml}
           ${tagsHtml ? `<div class="topic-tags">${tagsHtml}</div>` : ''}
         </div>
@@ -226,6 +233,7 @@ function _renderTable(search = '') {
           <div class="topic-card-num">${i + 1}</div>
           <div class="topic-card-title">${_esc(topic.topic)}</div>
           <span class="status-badge status-${sc}">${topic.status}</span>
+          ${_srStrength(topic.ease)}
         </div>
         ${tagsHtml ? `<div class="topic-card-tags">${tagsHtml}</div>` : ''}
         ${topic.notes ? `<div class="topic-card-notes">${_esc(topic.notes)}</div>` : ''}
@@ -259,7 +267,18 @@ function _renderTable(search = '') {
 
 function _wireEvents(root, topics) {
   root.querySelectorAll('.custom-checkbox').forEach(cb =>
-    cb.addEventListener('change', e => toggleRepeat(Number(e.target.dataset.i), e.target.dataset.f))
+    cb.addEventListener('change', e => {
+      const idx    = Number(e.target.dataset.i);
+      const field  = e.target.dataset.f;
+      const wasOff = !topics[idx][field];
+      toggleRepeat(idx, field);
+      if (wasOff) {
+        const updated = trackerStore.get()[idx];
+        const easeVal = updated.ease ?? 2.5;
+        const strength = easeVal < 1.6 ? 'Weak' : easeVal < 2.2 ? 'Growing' : 'Strong';
+        toast.show(`Next review: ${readableDateLong(updated.nextRepeat)} · SR: ${strength}`, 'success');
+      }
+    })
   );
   root.querySelectorAll('.edit-btn').forEach(btn =>
     btn.addEventListener('click', e => { const i = Number(e.currentTarget.dataset.i); openModal(topics[i], i); })

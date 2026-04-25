@@ -16,6 +16,7 @@ import { Nav } from './shared/Nav.js';
 import { toast } from './shared/Toast.js';
 import { mountTimerView } from './timer/TimerView.js';
 import { mountTrackerView } from './tracker/TrackerView.js';
+import { mountAnalyticsView } from './analytics/AnalyticsView.js';
 
 function boot() {
   // Restore persisted state before mounting views
@@ -37,6 +38,7 @@ function boot() {
 
   mountTimerView(document.getElementById('dw-view'));
   mountTrackerView(document.getElementById('tr-view'));
+  mountAnalyticsView(document.getElementById('an-view'));
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
@@ -54,6 +56,7 @@ function boot() {
 
     if (e.key === '1') { e.preventDefault(); Nav.switchTo('dw'); return; }
     if (e.key === '2') { e.preventDefault(); Nav.switchTo('tr'); return; }
+    if (e.key === '3') { e.preventDefault(); Nav.switchTo('an'); return; }
 
     if (e.key === ' ' && _currentView === 'dw') {
       e.preventDefault();

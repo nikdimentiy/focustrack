@@ -1,7 +1,7 @@
 import { trackerStore } from '../store/trackerStore.js';
 import { saveTopics } from '../services/storage.js';
 import { cloudSaveTopics } from '../services/cloudTopics.js';
-import { calcStatus, fmtDate } from '../shared/utils.js';
+import { calcStatus, fmtDate, adjustEase, computeNextRepeat } from '../shared/utils.js';
 
 function persist(topics) { saveTopics(topics); cloudSaveTopics(topics); }
 
@@ -21,8 +21,18 @@ export function deleteTopic(index) {
 }
 
 export function toggleRepeat(index, field) {
-  const topics = trackerStore.get().map((t, i) => i === Number(index) ? { ...t, [field]: !t[field] } : t);
-  trackerStore.set(topics); persist(topics);
+  const topics  = trackerStore.get();
+  const topic   = topics[Number(index)];
+  const wasOff  = !topic[field];
+  let   updated = { ...topic, [field]: !topic[field] };
+  if (wasOff) {
+    const today      = fmtDate(new Date());
+    const ease       = adjustEase(topic.ease ?? 2.5, topic.nextRepeat, today);
+    const nextRepeat = computeNextRepeat(field, ease, today);
+    updated = { ...updated, ease, nextRepeat, status: calcStatus(nextRepeat) };
+  }
+  const newTopics = topics.map((t, i) => i === Number(index) ? updated : t);
+  trackerStore.set(newTopics); persist(newTopics);
 }
 
 export function refreshStatuses() {

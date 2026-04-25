@@ -35,6 +35,7 @@ body::after {
 }
 
 /* View toggling via body class */
-#dw-view, #tr-view { display: none; }
+#dw-view, #tr-view, #an-view { display: none; }
 body.theme-dw #dw-view { display: block; }
 body.theme-tr #tr-view { display: block; }
+body.theme-an #an-view { display: block; }
