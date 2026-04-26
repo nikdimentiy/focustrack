@@ -497,19 +497,20 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
   #dw-view .panel       { padding: 22px 16px 24px; border-radius: 14px; }
   #dw-view .panel-title { font-size: 1.25rem; letter-spacing: .04em; margin-bottom: 16px; }
 
-  /* session-body is now session-left only — keep as column */
-  #dw-view .session-body { display: flex; flex-direction: column; gap: 16px; }
-  #dw-view .session-left { display: flex; }
+  /* session-body is now session-left only — keep as column, stretch so children fill full panel width */
+  #dw-view .session-body { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
+  #dw-view .session-left { display: flex; width: 100%; }
 
-  /* 1 ── Active Mission — feels like a hero card */
+  /* 1 ── Active Mission — full-width hero card */
   #dw-view .task-block {
-    padding: 16px 18px 14px; border-radius: 12px;
+    width: 100%; padding: 16px 18px 14px; border-radius: 12px;
     background: rgba(0,245,255,0.04);
     border: 1px solid rgba(0,245,255,0.12);
     border-top: 1px solid rgba(0,245,255,0.34);
+    box-sizing: border-box;
   }
   #dw-view .task-kicker { font-size: .55rem; letter-spacing: .25em; opacity: .6; margin-bottom: 5px; }
-  #dw-view .task-name   { font-size: 1.5rem; line-height: 1.2; }
+  #dw-view .task-name   { font-size: 1.5rem; line-height: 1.2; word-break: break-word; }
 
   /* 2 ── Arc — bigger, centered, the visual anchor */
   #dw-view .arc-wrap     { padding: 6px 0 2px; align-self: center; }
@@ -545,31 +546,57 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
   .mode-dur  { font-size: .56rem; opacity: .85; margin-top: 4px; }
 
   /* 5 ── Custom duration row — full width */
-  .custom-minutes-row { flex-wrap: wrap; gap: 10px; width: 100%; }
-  .custom-minutes-row input[type="number"] { width: 80px; height: 38px; font-size: .82rem; }
+  .custom-minutes-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; }
+  .custom-minutes-row input[type="number"] { flex: 1; min-width: 70px; max-width: 120px; height: 44px; font-size: .9rem; border-radius: 6px; border: 1px solid rgba(0,245,255,0.28); background: rgba(0,0,0,0.3); color: var(--neon-cyan); text-align: center; padding: 0 8px; }
 
   /* 6 ── Form fields — readable labels, comfy inputs */
-  #dw-view .setup-row          { grid-template-columns: 1fr; gap: 12px; }
-  #dw-view .field              { gap: 6px; }
+  #dw-view .setup-row          { grid-template-columns: 1fr; gap: 12px; width: 100%; }
+  #dw-view .tag-row            { width: 100%; }
+  #dw-view .field              { gap: 6px; width: 100%; }
   #dw-view .field label        { font-size: .6rem; letter-spacing: .12em; }
   #dw-view .field input,
-  #dw-view .field select       { height: 46px; font-size: 1rem; border-radius: 8px; }
+  #dw-view .field select       { width: 100%; height: 46px; font-size: 1rem; border-radius: 8px; }
 
-  /* 7 ── Stats — compact summary, separated from the controls above */
+  /* 7 ── Stats — 2×2 grid, fills full panel width */
   #dw-view .stats-grid {
-    grid-template-columns: repeat(2, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    width: 100%;
     padding-top: 16px; margin-top: 4px;
     border-top: 1px dashed rgba(0,245,255,0.12);
   }
-  #dw-view .stat       { padding: 12px 14px; border-radius: 8px; }
+  #dw-view .stat       { padding: 14px 12px; border-radius: 10px; }
   #dw-view .stat-value { font-size: clamp(22px, 6vw, 30px); }
-  #dw-view .stat-label { font-size: .54rem; letter-spacing: .14em; }
-  #dw-view .stat-sub   { font-size: .53rem; }
+  #dw-view .stat-label { font-size: .56rem; letter-spacing: .12em; }
+  #dw-view .stat-sub   { font-size: .54rem; }
 }
 
-/* Phone-only — extra bottom padding so content clears the floating bottom auth widget */
+/* Phone-only — extra bottom padding + layout tightening */
 @media (max-width: 599px) {
   #dw-view .app { padding-bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Guarantee every form layer is full-width on phones */
+  #dw-view .session-body,
+  #dw-view .session-left,
+  #dw-view .task-block,
+  #dw-view .setup-row,
+  #dw-view .tag-row,
+  #dw-view .field,
+  #dw-view .mode-row,
+  #dw-view .pomo-config-row,
+  #dw-view .custom-minutes-row,
+  #dw-view .stats-grid { width: 100%; box-sizing: border-box; }
+
+  /* Inputs & selects fill their field column */
+  #dw-view .field input,
+  #dw-view .field select { width: 100%; }
+
+  /* Stats grid — 4 cards in 2 rows, equal width */
+  #dw-view .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  #dw-view .stat { padding: 12px 10px; }
+  #dw-view .stat-value { font-size: clamp(20px, 5.5vw, 28px); }
+
+  /* Custom duration — make input more touch-friendly */
+  .custom-minutes-row input[type="number"] { flex: 1; min-width: 60px; max-width: 100px; height: 44px; }
 }
 
 /* ── Repetition Tracker View ── */
