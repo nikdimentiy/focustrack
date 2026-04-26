@@ -982,6 +982,26 @@ tr.dragging { opacity: .4; }
   background: rgba(0,245,255,0.1); border-color: var(--neon-cyan);
 }
 .mode-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Per-mode gradient tints */
+.mode-btn[data-mode="pomodoro"] { background: linear-gradient(135deg, rgba(255,80,80,0.08), rgba(255,120,100,0.04)); border-color: rgba(255,80,80,.2); }
+.mode-btn[data-mode="pomodoro"]:hover:not(:disabled) { background: linear-gradient(135deg, rgba(255,80,80,0.16), rgba(255,120,100,0.08)); border-color: rgba(255,80,80,.4); }
+.mode-btn[data-mode="pomodoro"].active { background: linear-gradient(135deg, rgba(255,80,80,0.22), rgba(255,120,100,0.12)); border-color: rgba(255,80,80,.7); }
+.mode-btn[data-mode="pomodoro"].active .mode-name,
+.mode-btn[data-mode="pomodoro"].active .mode-dur { color: #ff7a6a; }
+
+.mode-btn[data-mode="deepwork"] { background: linear-gradient(135deg, rgba(140,90,255,0.08), rgba(180,120,255,0.04)); border-color: rgba(140,90,255,.2); }
+.mode-btn[data-mode="deepwork"]:hover:not(:disabled) { background: linear-gradient(135deg, rgba(140,90,255,0.16), rgba(180,120,255,0.08)); border-color: rgba(140,90,255,.4); }
+.mode-btn[data-mode="deepwork"].active { background: linear-gradient(135deg, rgba(140,90,255,0.22), rgba(180,120,255,0.12)); border-color: rgba(140,90,255,.7); }
+.mode-btn[data-mode="deepwork"].active .mode-name,
+.mode-btn[data-mode="deepwork"].active .mode-dur { color: #b47aff; }
+
+.mode-btn[data-mode="custom"] { background: linear-gradient(135deg, rgba(255,210,60,0.08), rgba(255,235,100,0.04)); border-color: rgba(255,210,60,.2); }
+.mode-btn[data-mode="custom"]:hover:not(:disabled) { background: linear-gradient(135deg, rgba(255,210,60,0.16), rgba(255,235,100,0.08)); border-color: rgba(255,210,60,.4); }
+.mode-btn[data-mode="custom"].active { background: linear-gradient(135deg, rgba(255,210,60,0.22), rgba(255,235,100,0.12)); border-color: rgba(255,210,60,.7); }
+.mode-btn[data-mode="custom"].active .mode-name,
+.mode-btn[data-mode="custom"].active .mode-dur { color: #ffd84a; }
+
 .mode-name {
   font-family: var(--font-mono); font-size: .58rem; letter-spacing: .12em;
   text-transform: uppercase; color: var(--text-dim);
