@@ -151,22 +151,15 @@ export function mountInfoButton(container) {
           <span class="info-desc">Reset timer</span>
         </div>
         <div class="info-row">
-          <span class="info-key">Ctrl+Shift+N</span>
+          <span class="info-key">Ctrl+Shift+E</span>
           <span class="info-desc">Log note for session</span>
-        </div>
-        <div class="info-row">
-          <span class="info-key">Space</span>
-          <div class="info-desc-wrap">
-            <span class="info-desc">Start / Pause timer</span>
-            <span class="info-sub">Timer view only</span>
-          </div>
         </div>
       </div>
 
       <div class="info-section-lbl">Tracker</div>
       <div class="info-shortcuts">
         <div class="info-row">
-          <span class="info-key">Ctrl+Shift+T</span>
+          <span class="info-key">Ctrl+Alt+T</span>
           <span class="info-desc">Add topic</span>
         </div>
         <div class="info-row">
@@ -185,6 +178,10 @@ export function mountInfoButton(container) {
 
       <div class="info-section-lbl">App</div>
       <div class="info-shortcuts">
+        <div class="info-row">
+          <span class="info-key">Ctrl+,</span>
+          <span class="info-desc">Open settings</span>
+        </div>
         <div class="info-row">
           <span class="info-key">Esc</span>
           <span class="info-desc">Close modal</span>

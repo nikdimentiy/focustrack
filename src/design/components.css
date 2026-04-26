@@ -338,13 +338,80 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .stat-sub   { font-family: var(--font-mono); font-size: .55rem; color: var(--text-dim); }
 
 #dw-view .arc-wrap   { display: flex; justify-content: center; align-items: center; position: relative; }
-#dw-view .arc-svg    { width: 170px; height: 170px; transform: rotate(-90deg); }
+#dw-view .arc-svg    { width: 210px; height: 210px; transform: rotate(-90deg); }
 #dw-view .arc-track  { fill: none; stroke: rgba(0,245,255,0.08); stroke-width: 5; }
 #dw-view .arc-fill   { fill: none; stroke: var(--neon-cyan); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 408; transition: stroke-dashoffset .8s ease; filter: drop-shadow(0 0 10px rgba(0,245,255,0.8)); }
-#dw-view .arc-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; }
-#dw-view .timer-pct    { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .18em; color: var(--neon-cyan); opacity: .6; }
-#dw-view .timer-digits { font-family: var(--font-mono); font-size: 28px; letter-spacing: .06em; color: var(--neon-cyan); text-shadow: 0 0 14px rgba(0,245,255,0.7); font-variant-numeric: tabular-nums; line-height: 1; }
-#dw-view .timer-sub    { font-family: var(--font-mono); font-size: .58rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .15em; }
+#dw-view .arc-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; text-align: center; }
+#dw-view .timer-pct  { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .18em; color: var(--neon-cyan); opacity: .6; }
+#dw-view .timer-sub  { font-family: var(--font-mono); font-size: .58rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .15em; }
+
+/* ── Flip Clock ── */
+#dw-view .flip-clock {
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+}
+#dw-view .flip-colon {
+  font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1;
+  color: var(--neon-cyan); opacity: .55; padding-bottom: 4px;
+  text-shadow: 0 0 10px rgba(0,245,255,0.5); margin: 0 1px;
+}
+#dw-view .flip-seg {
+  position: relative; width: 22px; height: 46px;
+  perspective: 260px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,245,255,0.07);
+}
+#dw-view .fs-upper, #dw-view .fs-lower,
+#dw-view .fs-flap-top, #dw-view .fs-flap-bot {
+  position: absolute; left: 0; right: 0;
+  overflow: hidden; text-align: center;
+  background: #080f24;
+}
+#dw-view .fs-char {
+  display: block; text-align: center;
+  font-family: var(--font-mono); font-size: 28px; font-weight: 700;
+  color: var(--neon-cyan); line-height: 46px;
+  text-shadow: 0 0 12px rgba(0,245,255,0.75);
+  font-variant-numeric: tabular-nums;
+}
+#dw-view .fs-upper, #dw-view .fs-flap-top {
+  top: 0; height: 23px;
+  border-radius: 5px 5px 0 0;
+  border-bottom: 1px solid rgba(0,0,0,0.7);
+  background: linear-gradient(180deg, #0b1328 0%, #080f24 100%);
+}
+#dw-view .fs-lower, #dw-view .fs-flap-bot {
+  bottom: 0; height: 23px;
+  border-radius: 0 0 5px 5px;
+  background: linear-gradient(180deg, #080f24 0%, #060c1e 100%);
+}
+#dw-view .fs-lower .fs-char, #dw-view .fs-flap-bot .fs-char {
+  margin-top: -23px;
+}
+#dw-view .fs-flap-top {
+  transform-origin: 50% 100%;
+  z-index: 2;
+  backface-visibility: hidden;
+}
+#dw-view .fs-flap-bot {
+  transform-origin: 50% 0%;
+  z-index: 2;
+  transform: rotateX(90deg);
+  backface-visibility: hidden;
+}
+@keyframes fcFlipTop {
+  0%   { transform: rotateX(0deg); }
+  100% { transform: rotateX(-90deg); }
+}
+@keyframes fcFlipBot {
+  0%   { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+#dw-view .flip-seg.is-flipping .fs-flap-top {
+  animation: fcFlipTop 0.24s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+#dw-view .flip-seg.is-flipping .fs-flap-bot {
+  animation: fcFlipBot 0.24s cubic-bezier(0, 0.55, 0.45, 1) 0.22s forwards;
+}
 
 #dw-view .btn-col  { display: flex; flex-direction: column; gap: 7px; width: 170px; }
 #dw-view .btn-pair { display: flex; flex-direction: column; gap: 7px; }
@@ -446,10 +513,15 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 
   /* 2 ── Arc — bigger, centered, the visual anchor */
   #dw-view .arc-wrap     { padding: 6px 0 2px; align-self: center; }
-  #dw-view .arc-svg      { width: 220px; height: 220px; }
+  #dw-view .arc-svg      { width: 250px; height: 250px; }
   #dw-view .timer-pct    { font-size: .65rem; }
-  #dw-view .timer-digits { font-size: 36px; letter-spacing: .04em; }
   #dw-view .timer-sub    { font-size: .6rem; }
+  #dw-view .flip-seg     { width: 28px; height: 56px; }
+  #dw-view .fs-char      { font-size: 34px; line-height: 56px; }
+  #dw-view .fs-upper, #dw-view .fs-flap-top { height: 28px; }
+  #dw-view .fs-lower, #dw-view .fs-flap-bot { height: 28px; }
+  #dw-view .fs-lower .fs-char, #dw-view .fs-flap-bot .fs-char { margin-top: -28px; }
+  #dw-view .flip-colon   { font-size: 28px; }
 
   /* 3 ── Buttons — full-width primary CTA */
   #dw-view .btn-col   { max-width: none; gap: 10px; }

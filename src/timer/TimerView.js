@@ -107,7 +107,9 @@ export function mountTimerView(container) {
           </svg>
           <div class="arc-center">
             <div class="timer-pct" id="timerPct">0%</div>
-            <div class="timer-digits" id="timerEl">00:00:00</div>
+            <div class="flip-clock" id="timerEl">
+              <div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><span class="flip-colon">:</span><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><span class="flip-colon">:</span><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div>
+            </div>
             <div class="timer-sub" id="timerSub">elapsed</div>
             <div class="phase-badge" id="phaseBadge"></div>
           </div>
@@ -484,7 +486,7 @@ export function mountTimerView(container) {
   };
 
   timerStore.subscribe(s => {
-    timerEl.textContent = fmtTime(s.elapsedSeconds);
+    _updateFlipClock(timerEl, fmtTime(s.elapsedSeconds));
     const target = getTarget(s);
     const pct = Math.min(s.elapsedSeconds / target, 1);
     arcFill.style.strokeDashoffset = ARC_FULL - ARC_FULL * pct;
@@ -506,7 +508,7 @@ export function mountTimerView(container) {
   pomoBreakMins.value = s.pomodoroBreakMins || 5;
   _updateTaskDisplay(taskDisp, s.task);
   syncBtns(s);
-  timerEl.textContent = fmtTime(s.elapsedSeconds);
+  _setFlipClock(timerEl, fmtTime(s.elapsedSeconds));
   const initTarget = getTarget(s);
   const initPct = Math.min(s.elapsedSeconds / initTarget, 1);
   timerPct.textContent = Math.round(initPct * 100) + '%';
@@ -694,6 +696,38 @@ function mountSessionEditModal() {
     updateSession(ts, { task, minutes, intensity, tags });
     toast.show('Session updated', 'success');
     close();
+  });
+}
+
+function _setFlipClock(clockEl, timeStr) {
+  const chars = timeStr.replace(/:/g, '').split('');
+  clockEl.querySelectorAll('.flip-seg').forEach((seg, i) => {
+    const v = chars[i] ?? '0';
+    seg.dataset.val = v;
+    seg.querySelectorAll('.fs-char').forEach(c => { c.textContent = v; });
+  });
+}
+
+function _updateFlipClock(clockEl, timeStr) {
+  const chars = timeStr.replace(/:/g, '').split('');
+  clockEl.querySelectorAll('.flip-seg').forEach((seg, i) => {
+    const next = chars[i] ?? '0';
+    const curr = seg.dataset.val ?? '0';
+    if (next === curr) return;
+
+    seg.querySelector('.fs-upper .fs-char').textContent = next;
+    seg.querySelector('.fs-flap-top .fs-char').textContent = curr;
+    seg.querySelector('.fs-flap-bot .fs-char').textContent = next;
+
+    seg.dataset.val = next;
+    seg.classList.remove('is-flipping');
+    void seg.offsetWidth;
+    seg.classList.add('is-flipping');
+
+    setTimeout(() => {
+      seg.classList.remove('is-flipping');
+      seg.querySelector('.fs-lower .fs-char').textContent = next;
+    }, 520);
   });
 }
 

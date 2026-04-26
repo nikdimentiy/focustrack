@@ -62,13 +62,13 @@ async function boot() {
     { label: 'Pause Timer',           group: 'Timer',    shortcut: 'Ctrl+Shift+H', action: () => { Nav.switchTo('dw'); pauseTimer(); } },
     { label: 'Stop Timer',            group: 'Timer',    shortcut: 'Ctrl+Shift+P', action: () => { Nav.switchTo('dw'); stopTimer(); } },
     { label: 'Reset Timer',           group: 'Timer',    shortcut: 'Ctrl+Shift+R', action: () => { Nav.switchTo('dw'); resetTimer(); } },
-    { label: 'Add Topic',             group: 'Tracker',  shortcut: 'Ctrl+Shift+T', action: () => { Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); } },
-    { label: 'Log Note',              group: 'Timer',    shortcut: 'Ctrl+Shift+N', action: () => _openNoteModal() },
+    { label: 'Add Topic',             group: 'Tracker',  shortcut: 'Ctrl+Alt+T',   action: () => { Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); } },
+    { label: 'Log Note',              group: 'Timer',    shortcut: 'Ctrl+Shift+E', action: () => _openNoteModal() },
     { label: 'Export Topics (JSON)',  group: 'Tracker',  shortcut: 'Ctrl+Alt+J',   action: () => exportTopics() },
     { label: 'Export Sessions (CSV)', group: 'Tracker',  shortcut: 'Ctrl+Alt+C',   action: () => exportSessionsCSV() },
     { label: 'Export Full Backup',    group: 'Tracker',  shortcut: 'Ctrl+Alt+B',   action: () => exportFullBackup() },
     { label: 'Open Shortcuts',        group: 'App',      shortcut: 'Ctrl+K',       action: () => palette.open() },
-    { label: 'Open Settings',         group: 'App',      shortcut: ',',            action: () => document.getElementById('settings-open')?.click() },
+    { label: 'Open Settings',         group: 'App',      shortcut: 'Ctrl+,',       action: () => document.getElementById('settings-open')?.click() },
     { label: 'Open Help',             group: 'App',      shortcut: '?',            action: () => document.getElementById('info-open')?.click() },
   ]);
 
@@ -88,6 +88,13 @@ async function boot() {
       return;
     }
 
+    // Ctrl+, — open settings (works from anywhere, including inputs)
+    if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+      e.preventDefault();
+      document.getElementById('settings-open')?.click();
+      return;
+    }
+
     // Ctrl+Shift+* timer & tracker shortcuts (work everywhere, including inputs)
     if (e.ctrlKey && e.shiftKey && !e.altKey) {
       switch (e.key.toUpperCase()) {
@@ -95,8 +102,7 @@ async function boot() {
         case 'H': e.preventDefault(); Nav.switchTo('dw'); pauseTimer(); return;
         case 'P': e.preventDefault(); Nav.switchTo('dw'); stopTimer(); return;
         case 'R': e.preventDefault(); Nav.switchTo('dw'); resetTimer(); return;
-        case 'T': e.preventDefault(); Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); return;
-        case 'N': e.preventDefault(); _openNoteModal(); return;
+        case 'E': e.preventDefault(); _openNoteModal(); return;
       }
     }
 
@@ -106,6 +112,7 @@ async function boot() {
         case 'J': e.preventDefault(); exportTopics(); return;
         case 'C': e.preventDefault(); exportSessionsCSV(); return;
         case 'B': e.preventDefault(); exportFullBackup(); return;
+        case 'T': e.preventDefault(); Nav.switchTo('tr'); document.getElementById('add-topic')?.click(); return;
       }
     }
 
@@ -128,11 +135,6 @@ async function boot() {
       return;
     }
 
-    if (e.key === ' ' && _currentView === 'dw') {
-      e.preventDefault();
-      timerStore.get().running ? pauseTimer() : startTimer();
-      return;
-    }
   });
 
   // Review reminders — check once on load (after a short delay so status is calculated)
