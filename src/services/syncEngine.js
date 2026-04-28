@@ -101,8 +101,8 @@ export async function doSync() {
     // --- Topics ---
     const cloudTopics = await fetchCloudTopics();
     if (cloudTopics) {
-      const withStatus = cloudTopics.map(t => ({ ...t, status: calcStatus(t.nextRepeat) }));
       const localTopics = trackerStore.get();
+      const withStatus = cloudTopics.map(t => ({ ...t, status: calcStatus(t.nextRepeat) }));
       const conflict = _detectTopicConflict(localTopics, cloudTopics);
       if (conflict) {
         _notifyConflict(conflict, localTopics, withStatus);

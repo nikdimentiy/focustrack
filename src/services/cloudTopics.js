@@ -13,6 +13,7 @@ export async function cloudSaveTopics(topics, { skipQueue = false } = {}) {
           date_learned: t.dateOfLearning, next_repeat: t.nextRepeat,
           repeat_1: !!t.repeat1, repeat_3: !!t.repeat3,
           repeat_7: !!t.repeat7, repeat_21: !!t.repeat21,
+          tags: Array.isArray(t.tags) ? t.tags : [],
           updated_at: new Date().toISOString(),
         }))
       );
@@ -33,6 +34,7 @@ export async function fetchCloudTopics() {
       topic: r.topic, dateOfLearning: r.date_learned, nextRepeat: r.next_repeat,
       status: 'Pending', repeat1: r.repeat_1, repeat3: r.repeat_3,
       repeat7: r.repeat_7, repeat21: r.repeat_21,
+      tags: Array.isArray(r.tags) ? r.tags : [],
     }));
   } catch { return null; }
 }
