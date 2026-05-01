@@ -79,10 +79,6 @@ Contributions drive open-source excellence. All submissions welcome.
 4. Push branch (`git push origin feature/YourFeature`)
 5. Open Pull Request
 
-## 📄 License
-
-**GNU General Public License v3.0**. See `LICENSE` for details.
-
 ***
 
 *Built by ⚡ Nikey Studio © 2026*
