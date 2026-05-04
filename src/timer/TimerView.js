@@ -107,8 +107,8 @@ export function mountTimerView(container) {
           </svg>
           <div class="arc-center">
             <div class="timer-pct" id="timerPct">0%</div>
-            <div class="flip-clock" id="timerEl">
-              <div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><span class="flip-colon">:</span><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><span class="flip-colon">:</span><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div><div class="flip-seg" data-val="0"><div class="fs-upper"><div class="fs-char">0</div></div><div class="fs-lower"><div class="fs-char">0</div></div><div class="fs-flap-top"><div class="fs-char">0</div></div><div class="fs-flap-bot"><div class="fs-char">0</div></div></div>
+            <div class="odo-clock" id="timerEl">
+              <div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><span class="odo-colon">:</span><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><span class="odo-colon">:</span><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
             </div>
             <div class="timer-sub" id="timerSub">elapsed</div>
             <div class="phase-badge" id="phaseBadge"></div>
@@ -701,33 +701,27 @@ function mountSessionEditModal() {
 
 function _setFlipClock(clockEl, timeStr) {
   const chars = timeStr.replace(/:/g, '').split('');
-  clockEl.querySelectorAll('.flip-seg').forEach((seg, i) => {
-    const v = chars[i] ?? '0';
-    seg.dataset.val = v;
-    seg.querySelectorAll('.fs-char').forEach(c => { c.textContent = v; });
+  clockEl.querySelectorAll('.odo-digit').forEach((digit, i) => {
+    const v = parseInt(chars[i] ?? '0', 10);
+    digit.dataset.val = v;
+    const reel = digit.querySelector('.odo-reel');
+    const h = digit.offsetHeight || 46;
+    reel.style.transition = 'none';
+    reel.style.transform = `translateY(-${v * h}px)`;
   });
 }
 
 function _updateFlipClock(clockEl, timeStr) {
   const chars = timeStr.replace(/:/g, '').split('');
-  clockEl.querySelectorAll('.flip-seg').forEach((seg, i) => {
-    const next = chars[i] ?? '0';
-    const curr = seg.dataset.val ?? '0';
+  clockEl.querySelectorAll('.odo-digit').forEach((digit, i) => {
+    const next = parseInt(chars[i] ?? '0', 10);
+    const curr = parseInt(digit.dataset.val ?? '0', 10);
     if (next === curr) return;
-
-    seg.querySelector('.fs-upper .fs-char').textContent = next;
-    seg.querySelector('.fs-flap-top .fs-char').textContent = curr;
-    seg.querySelector('.fs-flap-bot .fs-char').textContent = next;
-
-    seg.dataset.val = next;
-    seg.classList.remove('is-flipping');
-    void seg.offsetWidth;
-    seg.classList.add('is-flipping');
-
-    setTimeout(() => {
-      seg.classList.remove('is-flipping');
-      seg.querySelector('.fs-lower .fs-char').textContent = next;
-    }, 520);
+    digit.dataset.val = next;
+    const reel = digit.querySelector('.odo-reel');
+    const h = digit.offsetHeight || 46;
+    reel.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    reel.style.transform = `translateY(-${next * h}px)`;
   });
 }
 

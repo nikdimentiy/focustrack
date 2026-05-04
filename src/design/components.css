@@ -345,72 +345,42 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .timer-pct  { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .18em; color: var(--neon-cyan); opacity: .6; }
 #dw-view .timer-sub  { font-family: var(--font-mono); font-size: .58rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .15em; }
 
-/* ── Flip Clock ── */
-#dw-view .flip-clock {
+/* ── Odometer Clock ── */
+#dw-view .odo-clock {
   display: flex; align-items: center; justify-content: center; gap: 3px;
 }
-#dw-view .flip-colon {
+#dw-view .odo-colon {
   font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1;
-  color: var(--neon-cyan); opacity: .55; padding-bottom: 4px;
+  color: var(--neon-cyan); opacity: .55; padding-bottom: 2px;
   text-shadow: 0 0 10px rgba(0,245,255,0.5); margin: 0 1px;
 }
-#dw-view .flip-seg {
-  position: relative; width: 22px; height: 46px;
-  perspective: 260px;
+#dw-view .odo-digit {
+  position: relative; width: 22px; height: 46px; overflow: hidden;
   border-radius: 5px;
+  background: #080f24;
   box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,245,255,0.07);
 }
-#dw-view .fs-upper, #dw-view .fs-lower,
-#dw-view .fs-flap-top, #dw-view .fs-flap-bot {
-  position: absolute; left: 0; right: 0;
-  overflow: hidden; text-align: center;
-  background: #080f24;
+#dw-view .odo-digit::before, #dw-view .odo-digit::after {
+  content: ''; position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none;
 }
-#dw-view .fs-char {
-  display: block; text-align: center;
+#dw-view .odo-digit::before {
+  top: 0; height: 32%;
+  background: linear-gradient(180deg, #080f24 0%, transparent 100%);
+}
+#dw-view .odo-digit::after {
+  bottom: 0; height: 32%;
+  background: linear-gradient(0deg, #060c1e 0%, transparent 100%);
+}
+#dw-view .odo-reel {
+  display: flex; flex-direction: column;
+  will-change: transform;
+}
+#dw-view .odo-reel span {
+  display: block; height: 46px; line-height: 46px; text-align: center; flex-shrink: 0;
   font-family: var(--font-mono); font-size: 28px; font-weight: 700;
-  color: var(--neon-cyan); line-height: 46px;
+  color: var(--neon-cyan);
   text-shadow: 0 0 12px rgba(0,245,255,0.75);
   font-variant-numeric: tabular-nums;
-}
-#dw-view .fs-upper, #dw-view .fs-flap-top {
-  top: 0; height: 23px;
-  border-radius: 5px 5px 0 0;
-  border-bottom: 1px solid rgba(0,0,0,0.7);
-  background: linear-gradient(180deg, #0b1328 0%, #080f24 100%);
-}
-#dw-view .fs-lower, #dw-view .fs-flap-bot {
-  bottom: 0; height: 23px;
-  border-radius: 0 0 5px 5px;
-  background: linear-gradient(180deg, #080f24 0%, #060c1e 100%);
-}
-#dw-view .fs-lower .fs-char, #dw-view .fs-flap-bot .fs-char {
-  margin-top: -23px;
-}
-#dw-view .fs-flap-top {
-  transform-origin: 50% 100%;
-  z-index: 2;
-  backface-visibility: hidden;
-}
-#dw-view .fs-flap-bot {
-  transform-origin: 50% 0%;
-  z-index: 2;
-  transform: rotateX(90deg);
-  backface-visibility: hidden;
-}
-@keyframes fcFlipTop {
-  0%   { transform: rotateX(0deg); }
-  100% { transform: rotateX(-90deg); }
-}
-@keyframes fcFlipBot {
-  0%   { transform: rotateX(90deg); }
-  100% { transform: rotateX(0deg); }
-}
-#dw-view .flip-seg.is-flipping .fs-flap-top {
-  animation: fcFlipTop 0.24s cubic-bezier(0.55, 0, 1, 0.45) forwards;
-}
-#dw-view .flip-seg.is-flipping .fs-flap-bot {
-  animation: fcFlipBot 0.24s cubic-bezier(0, 0.55, 0.45, 1) 0.22s forwards;
 }
 
 #dw-view .btn-col  { display: flex; flex-direction: column; gap: 7px; width: 170px; }
@@ -517,12 +487,9 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
   #dw-view .arc-svg      { width: 250px; height: 250px; }
   #dw-view .timer-pct    { font-size: .65rem; }
   #dw-view .timer-sub    { font-size: .6rem; }
-  #dw-view .flip-seg     { width: 28px; height: 56px; }
-  #dw-view .fs-char      { font-size: 34px; line-height: 56px; }
-  #dw-view .fs-upper, #dw-view .fs-flap-top { height: 28px; }
-  #dw-view .fs-lower, #dw-view .fs-flap-bot { height: 28px; }
-  #dw-view .fs-lower .fs-char, #dw-view .fs-flap-bot .fs-char { margin-top: -28px; }
-  #dw-view .flip-colon   { font-size: 28px; }
+  #dw-view .odo-digit    { width: 28px; height: 56px; }
+  #dw-view .odo-reel span { height: 56px; line-height: 56px; font-size: 34px; }
+  #dw-view .odo-colon    { font-size: 28px; }
 
   /* 3 ── Buttons — full-width primary CTA */
   #dw-view .btn-col   { max-width: none; gap: 10px; }
