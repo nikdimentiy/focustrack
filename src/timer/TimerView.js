@@ -107,8 +107,8 @@ export function mountTimerView(container) {
           </svg>
           <div class="arc-center">
             <div class="timer-pct" id="timerPct">0%</div>
-            <div class="odo-clock" id="timerEl">
-              <div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><span class="odo-colon">:</span><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><span class="odo-colon">:</span><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div><div class="odo-digit" data-val="0"><div class="odo-reel"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
+            <div class="digi-clock" id="timerEl">
+              <div class="digi-digit" data-val="0" data-layer="a"><span class="digi-a">0</span><span class="digi-b">0</span></div><div class="digi-digit" data-val="0" data-layer="a"><span class="digi-a">0</span><span class="digi-b">0</span></div><span class="digi-colon">:</span><div class="digi-digit" data-val="0" data-layer="a"><span class="digi-a">0</span><span class="digi-b">0</span></div><div class="digi-digit" data-val="0" data-layer="a"><span class="digi-a">0</span><span class="digi-b">0</span></div><span class="digi-colon">:</span><div class="digi-digit" data-val="0" data-layer="a"><span class="digi-a">0</span><span class="digi-b">0</span></div><div class="digi-digit" data-val="0" data-layer="a"><span class="digi-a">0</span><span class="digi-b">0</span></div>
             </div>
             <div class="timer-sub" id="timerSub">elapsed</div>
             <div class="phase-badge" id="phaseBadge"></div>
@@ -701,27 +701,24 @@ function mountSessionEditModal() {
 
 function _setFlipClock(clockEl, timeStr) {
   const chars = timeStr.replace(/:/g, '').split('');
-  clockEl.querySelectorAll('.odo-digit').forEach((digit, i) => {
-    const v = parseInt(chars[i] ?? '0', 10);
+  clockEl.querySelectorAll('.digi-digit').forEach((digit, i) => {
+    const v = chars[i] ?? '0';
     digit.dataset.val = v;
-    const reel = digit.querySelector('.odo-reel');
-    const h = digit.offsetHeight || 46;
-    reel.style.transition = 'none';
-    reel.style.transform = `translateY(-${v * h}px)`;
+    digit.dataset.layer = 'a';
+    digit.querySelector('.digi-a').textContent = v;
+    digit.querySelector('.digi-b').textContent = v;
   });
 }
 
 function _updateFlipClock(clockEl, timeStr) {
   const chars = timeStr.replace(/:/g, '').split('');
-  clockEl.querySelectorAll('.odo-digit').forEach((digit, i) => {
-    const next = parseInt(chars[i] ?? '0', 10);
-    const curr = parseInt(digit.dataset.val ?? '0', 10);
-    if (next === curr) return;
+  clockEl.querySelectorAll('.digi-digit').forEach((digit, i) => {
+    const next = chars[i] ?? '0';
+    if (next === digit.dataset.val) return;
     digit.dataset.val = next;
-    const reel = digit.querySelector('.odo-reel');
-    const h = digit.offsetHeight || 46;
-    reel.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    reel.style.transform = `translateY(-${next * h}px)`;
+    const nextLayer = digit.dataset.layer === 'a' ? 'b' : 'a';
+    digit.querySelector(`.digi-${nextLayer}`).textContent = next;
+    digit.dataset.layer = nextLayer;
   });
 }
 

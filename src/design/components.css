@@ -345,43 +345,37 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
 #dw-view .timer-pct  { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .18em; color: var(--neon-cyan); opacity: .6; }
 #dw-view .timer-sub  { font-family: var(--font-mono); font-size: .58rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .15em; }
 
-/* ── Odometer Clock ── */
-#dw-view .odo-clock {
+/* ── Crossfade Clock ── */
+#dw-view .digi-clock {
   display: flex; align-items: center; justify-content: center; gap: 3px;
 }
-#dw-view .odo-colon {
+#dw-view .digi-colon {
   font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1;
   color: var(--neon-cyan); opacity: .55; padding-bottom: 2px;
   text-shadow: 0 0 10px rgba(0,245,255,0.5); margin: 0 1px;
 }
-#dw-view .odo-digit {
+#dw-view .digi-digit {
   position: relative; width: 22px; height: 46px; overflow: hidden;
   border-radius: 5px;
-  background: #080f24;
+  background: linear-gradient(180deg, #0b1328 0%, #060c1e 100%);
   box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,245,255,0.07);
 }
-#dw-view .odo-digit::before, #dw-view .odo-digit::after {
-  content: ''; position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none;
-}
-#dw-view .odo-digit::before {
-  top: 0; height: 32%;
-  background: linear-gradient(180deg, #080f24 0%, transparent 100%);
-}
-#dw-view .odo-digit::after {
-  bottom: 0; height: 32%;
-  background: linear-gradient(0deg, #060c1e 0%, transparent 100%);
-}
-#dw-view .odo-reel {
-  display: flex; flex-direction: column;
-  will-change: transform;
-}
-#dw-view .odo-reel span {
-  display: block; height: 46px; line-height: 46px; text-align: center; flex-shrink: 0;
+#dw-view .digi-a, #dw-view .digi-b {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
   font-family: var(--font-mono); font-size: 28px; font-weight: 700;
   color: var(--neon-cyan);
   text-shadow: 0 0 12px rgba(0,245,255,0.75);
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
+/* layer A visible */
+#dw-view .digi-digit[data-layer="a"] .digi-a { opacity: 1; transform: translateY(0); }
+#dw-view .digi-digit[data-layer="a"] .digi-b { opacity: 0; transform: translateY(38%); }
+/* layer B visible */
+#dw-view .digi-digit[data-layer="b"] .digi-b { opacity: 1; transform: translateY(0); }
+#dw-view .digi-digit[data-layer="b"] .digi-a { opacity: 0; transform: translateY(-38%); }
 
 #dw-view .btn-col  { display: flex; flex-direction: column; gap: 7px; width: 170px; }
 #dw-view .btn-pair { display: flex; flex-direction: column; gap: 7px; }
@@ -487,9 +481,9 @@ nav#nav button.active { background: rgba(0,245,255,0.1); color: var(--neon-cyan)
   #dw-view .arc-svg      { width: 250px; height: 250px; }
   #dw-view .timer-pct    { font-size: .65rem; }
   #dw-view .timer-sub    { font-size: .6rem; }
-  #dw-view .odo-digit    { width: 28px; height: 56px; }
-  #dw-view .odo-reel span { height: 56px; line-height: 56px; font-size: 34px; }
-  #dw-view .odo-colon    { font-size: 28px; }
+  #dw-view .digi-digit   { width: 28px; height: 56px; }
+  #dw-view .digi-a, #dw-view .digi-b { font-size: 34px; }
+  #dw-view .digi-colon   { font-size: 28px; }
 
   /* 3 ── Buttons — full-width primary CTA */
   #dw-view .btn-col   { max-width: none; gap: 10px; }
